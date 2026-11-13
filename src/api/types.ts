@@ -6,7 +6,7 @@ export interface Branch {
   branch_id: string
   code: string
   name: string
-  online_branch_id: number | null
+  online_branch_id: string | null
   is_active: boolean
 }
 
