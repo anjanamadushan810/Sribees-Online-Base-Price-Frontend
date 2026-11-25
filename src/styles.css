@@ -244,3 +244,9 @@ tr.total td { background: var(--sb-primary-soft); }
   body { background: white; }
   .ord-timeline { break-inside: avoid; }
 }
+
+/* ---- supplier page: header card with the facts and contact buttons ---- */
+.sup-head { margin-bottom: 16px; }
+.sup-facts { display: flex; gap: 28px; flex-wrap: wrap; margin: 0 0 12px; }
+.sup-facts dt { color: var(--sb-muted); font-size: 12px; }
+.sup-facts dd { margin: 0; font-weight: 600; font-size: 16px; }

@@ -1,8 +1,8 @@
-import { CopyOutlined } from '@ant-design/icons'
+import { CopyOutlined, MailOutlined, PhoneOutlined, WhatsAppOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Alert, App, Button, Card, Checkbox, Descriptions, Empty, Form, Input, InputNumber, Modal,
-  Select, Space, Statistic, Switch, Table, Tabs, Tag, Typography,
+  Select, Space, Statistic, Steps, Switch, Table, Tabs, Tag, Typography,
 } from 'antd'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
@@ -12,61 +12,100 @@ import { formatMoney } from '../api/money'
 import type { Catalog, ImportPreview, ImportResult, Supplier, SupplierUser } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import PageHeader from '../components/PageHeader'
+import { StatusPill } from '../components/ui'
+import { useT } from '../i18n'
 import MatchingPanel from './MatchingPanel'
+import { fmt } from './matchingLogic'
+import { catalogStats, contactLinks, importStep } from './supplierLogic'
 import SupplierDetails from './SupplierDetails'
 import { PasswordBox, clean } from './SupplierFields'
 
 export default function SupplierDetail() {
   const { id = '' } = useParams()
   const { can } = useAuth()
+  const { t } = useT()
   const supplier = useQuery({
     queryKey: ['supplier', id],
     queryFn: async () => (await api.get<Supplier>(`/suppliers/${id}`)).data,
   })
+  // One catalogue load feeds the header facts, the tab counts and the price list tab.
+  const catalog = useQuery({
+    queryKey: ['catalog', id],
+    queryFn: async () => (await api.get<Catalog>(`/suppliers/${id}/catalog`)).data,
+  })
   const s = supplier.data
+  const stats = catalogStats(catalog.data)
+  const links = s ? contactLinks(s) : null
+  const count = (n: number) => (n > 0 ? ` (${n})` : '')
   return (
     <>
-      <PageHeader back="/suppliers" title={s?.name ?? '…'}
-        subtitle={s ? `${s.code}${s.notes ? ` · ${s.notes}` : ''}` : undefined}
-        extra={s && !s.is_active && <Tag>Inactive</Tag>} />
+      <PageHeader back="/suppliers" title={s?.name ?? '…'} subtitle={s ? `${s.code}${s.notes ? ` · ${s.notes}` : ''}` : undefined}
+        status={s && <StatusPill tone={s.is_active ? 'success' : 'neutral'}>{s.is_active ? t('sup.active') : t('sup.inactive')}</StatusPill>} />
+      {s && (
+        <Card size="small" className="sup-head">
+          <dl className="sup-facts">
+            <div><dt>{t('sup.fact.terms')}</dt><dd>{s.credit_days === 0 ? t('sup.cash') : fmt(t('sup.creditDays'), { n: s.credit_days })}</dd></div>
+            <div><dt>{t('sup.fact.lines')}</dt><dd className="num">{stats.lines}</dd></div>
+            <div><dt>{t('sup.fact.held')}</dt><dd className="num">{stats.held > 0
+              ? <StatusPill tone="warning">{stats.held}</StatusPill> : 0}</dd></div>
+            <div><dt>{t('sup.fact.phones')}</dt><dd className="num">{s.users.length}</dd></div>
+            {s.is_related_party && <div><dt>&nbsp;</dt><dd><StatusPill tone="info">{t('sup.related')}</StatusPill></dd></div>}
+          </dl>
+          <Space wrap className="sup-contact">
+            {links?.call && <Button icon={<PhoneOutlined />} href={links.call}>{t('sup.call')} {s.phone}</Button>}
+            {links?.whatsapp && <Button icon={<WhatsAppOutlined />} href={links.whatsapp} target="_blank" rel="noreferrer">{t('sup.whatsapp')}</Button>}
+            {links?.email && <Button icon={<MailOutlined />} href={links.email}>{t('sup.mail')}</Button>}
+          </Space>
+        </Card>
+      )}
       <Tabs items={[
-        { key: 'details', label: 'Details', children: s ? <SupplierDetails supplier={s} /> : null },
-        { key: 'prices', label: 'Price list', children: <CatalogView supplierId={id} /> },
+        { key: 'details', label: t('sup.tab.details'), children: s ? <SupplierDetails supplier={s} /> : null },
+        { key: 'prices', label: `${t('sup.tab.prices')}${count(stats.lines)}`, children: <CatalogView supplierId={id} /> },
         ...(can('suppliers.write')
-          ? [{ key: 'import', label: 'Import WhatsApp list', children: <ImportPanel supplierId={id} /> }]
+          ? [{ key: 'import', label: t('sup.tab.import'), children: <ImportPanel supplierId={id} /> }]
           : []),
-        { key: 'matching', label: 'Matching', children: <MatchingPanel supplierId={id} /> },
-        { key: 'phones', label: 'App phones', children: s ? <PhonesPanel supplier={s} /> : null },
-        { key: 'message', label: 'WhatsApp message', children: <MessagePanel supplierId={id} /> },
+        { key: 'matching', label: t('sup.tab.matching'), children: <MatchingPanel supplierId={id} /> },
+        { key: 'phones', label: `${t('sup.tab.phones')}${count(s?.users.length ?? 0)}`, children: s ? <PhonesPanel supplier={s} /> : null },
+        { key: 'message', label: t('sup.tab.message'), children: <MessagePanel supplierId={id} /> },
       ]} />
     </>
   )
 }
 
 function CatalogView({ supplierId }: { supplierId: string }) {
+  const { t } = useT()
   const catalog = useQuery({
     queryKey: ['catalog', supplierId],
     queryFn: async () => (await api.get<Catalog>(`/suppliers/${supplierId}/catalog`)).data,
   })
   const [q, setQ] = useState('')
+  const [heldOnly, setHeldOnly] = useState(false)
   if (!catalog.data) return <Card loading />
-  const rows = catalog.data.sections.flatMap((s) => s.products.flatMap((p) => p.offers.map((o) => ({
+  const all = catalog.data.sections.flatMap((s) => s.products.flatMap((p) => p.offers.map((o) => ({
     key: o.offer_id, section: s.title, heading: p.heading, productActive: p.is_active, ...o,
-  })))).filter((r) => !q || `${r.section} ${r.heading} ${r.label}`.toLowerCase().includes(q.toLowerCase()))
+  }))))
+  const needle = q.trim().toLowerCase()
+  const rows = all.filter((r) => (!heldOnly || r.held_reason)
+    && (!needle || `${r.section} ${r.heading} ${r.label}`.toLowerCase().includes(needle)))
   return (
     <>
-      <Input.Search placeholder="Search item" allowClear style={{ maxWidth: 320, marginBottom: 12 }}
-        onChange={(e) => setQ(e.target.value)} />
-      <Table size="small" dataSource={rows} pagination={{ pageSize: 50 }} columns={[
-        { title: 'Section', dataIndex: 'section', width: 160 },
-        { title: 'Item', render: (_, r) => <>{r.heading} {r.label && <Tag>{r.label}</Tag>}</> },
-        { title: 'Our price', dataIndex: 'price', align: 'right', render: formatMoney },
-        { title: 'Selling price', dataIndex: 'mrp', align: 'right', render: formatMoney },
-        { title: 'Per box', dataIndex: 'units_per_box', align: 'right', render: (v) => v ?? '?' },
-        { title: '', width: 220, render: (_, r) => (
+      <div className="ord-filters">
+        <Input.Search placeholder={t('sup.search')} aria-label={t('sup.search')} allowClear
+          style={{ maxWidth: 320 }} onChange={(e) => setQ(e.target.value)} />
+        <Checkbox checked={heldOnly} onChange={(e) => setHeldOnly(e.target.checked)}>{t('sup.heldOnly')}</Checkbox>
+        <span className="ord-summary" aria-live="polite">{fmt(t('sup.linesShown'), { n: rows.length, total: all.length })}</span>
+      </div>
+      <Table size="small" dataSource={rows} pagination={{ pageSize: 50, hideOnSinglePage: true }}
+        locale={{ emptyText: <Empty description={t('sup.priceEmpty')} /> }} columns={[
+        { title: t('sup.section'), dataIndex: 'section', width: 160 },
+        { title: t('sup.item'), render: (_, r) => <>{r.heading} {r.label && <Tag>{r.label}</Tag>}</> },
+        { title: t('sup.ourPrice'), dataIndex: 'price', align: 'right', render: formatMoney },
+        { title: t('sup.sellPrice'), dataIndex: 'mrp', align: 'right', render: formatMoney },
+        { title: t('sup.perBox'), dataIndex: 'units_per_box', align: 'right', render: (v) => v ?? '?' },
+        { title: '', width: 240, render: (_, r) => (
           <Space wrap>
-            {r.held_reason && <Tag color="red">{HELD_LABEL[r.held_reason] ?? r.held_reason}</Tag>}
-            {(!r.is_active || !r.productActive) && <Tag>Not for sale</Tag>}
+            {r.held_reason && <StatusPill tone="danger">{HELD_LABEL[r.held_reason] ?? r.held_reason}</StatusPill>}
+            {(!r.is_active || !r.productActive) && <StatusPill tone="neutral">{t('sup.notForSale')}</StatusPill>}
           </Space>
         ) },
       ]} />
@@ -76,9 +115,11 @@ function CatalogView({ supplierId }: { supplierId: string }) {
 
 function ImportPanel({ supplierId }: { supplierId: string }) {
   const { message } = App.useApp()
+  const { t } = useT()
   const qc = useQueryClient()
   const [text, setText] = useState('')
   const [preview, setPreview] = useState<ImportPreview | null>(null)
+  const [result, setResult] = useState<ImportResult | null>(null)
   const [answers, setAnswers] = useState<Record<number, { skip: boolean; price?: string; mrp?: string; units?: number }>>({})
   const check = useMutation({
     mutationFn: async () => (await api.post<ImportPreview>(`/suppliers/${supplierId}/catalog/import/preview`, { text })).data,
@@ -98,34 +139,50 @@ function ImportPanel({ supplierId }: { supplierId: string }) {
         : { line_no: Number(line), price: a.price, mrp: a.mrp || undefined, units_per_box: a.units }),
     })).data,
     onSuccess: (r) => {
-      message.success(`Imported: ${r.offers_new} new, ${r.offers_changed} changed, ${r.offers_skipped} skipped`)
+      setResult(r)
       setPreview(null)
       setText('')
       qc.invalidateQueries({ queryKey: ['catalog', supplierId] })
+      qc.invalidateQueries({ queryKey: ['matching', supplierId] })
     },
     onError: (e) => message.error(errorMessage(e)),
   })
+  const step = importStep(!!preview, !!result)
+  if (result) {
+    return (
+      <Space direction="vertical" style={{ width: '100%' }} size="middle">
+        <Steps current={2} items={[{ title: t('sup.step.paste') }, { title: t('sup.step.check') }, { title: t('sup.step.done') }]} />
+        <Alert type="success" showIcon message={t('sup.import.doneTitle')}
+          description={fmt(t('sup.import.doneText'), { new: result.offers_new, changed: result.offers_changed, skipped: result.offers_skipped })} />
+        <Space>
+          <Button type="primary" onClick={() => setResult(null)}>{t('sup.import.another')}</Button>
+        </Space>
+      </Space>
+    )
+  }
   return (
     <Space direction="vertical" style={{ width: '100%' }} size="middle">
-      <Alert type="info" showIcon message="Paste the supplier's WhatsApp price list. Nothing changes until you press Import; items missing from the paste are left as they are." />
-      <Input.TextArea rows={10} value={text} onChange={(e) => { setText(e.target.value); setPreview(null) }} />
+      <Steps current={step} items={[{ title: t('sup.step.paste') }, { title: t('sup.step.check') }, { title: t('sup.step.done') }]} />
+      {!preview && <Alert type="info" showIcon message={t('sup.import.hint')} />}
+      {!preview && <Input.TextArea rows={10} value={text} aria-label={t('sup.step.paste')}
+        onChange={(e) => { setText(e.target.value); setPreview(null) }} />}
       {!preview && <Button type="primary" disabled={!text.trim()} loading={check.isPending}
-        onClick={() => check.mutate()}>Check</Button>}
+        onClick={() => check.mutate()}>{t('sup.import.check')}</Button>}
       {preview && (
         <>
           <Space wrap size="large">
-            <Statistic title="New items" value={preview.new_products} />
-            <Statistic title="New price lines" value={preview.new_offers} />
-            <Statistic title="Changed prices" value={preview.changed_offers.length} />
-            <Statistic title="Unchanged" value={preview.same_offers} />
-            <Statistic title="To check" value={preview.flagged.length} />
+            <Statistic title={t('sup.import.new')} value={preview.new_products} />
+            <Statistic title={t('sup.import.newLines')} value={preview.new_offers} />
+            <Statistic title={t('sup.import.changed')} value={preview.changed_offers.length} />
+            <Statistic title={t('sup.import.same')} value={preview.same_offers} />
+            <Statistic title={t('sup.import.toCheck')} value={preview.flagged.length} />
           </Space>
           {preview.changed_offers.length > 0 && (
             <Table size="small" pagination={false} rowKey="line_no" dataSource={preview.changed_offers}
               columns={[
                 { title: 'Item', render: (_, c) => `${c.heading} ${c.label}` },
-                { title: 'Old', dataIndex: 'old_price', align: 'right', render: formatMoney },
-                { title: 'New', dataIndex: 'new_price', align: 'right', render: formatMoney },
+                { title: t('sup.import.old'), dataIndex: 'old_price', align: 'right', render: formatMoney },
+                { title: t('sup.import.newPrice'), dataIndex: 'new_price', align: 'right', render: formatMoney },
               ]} />
           )}
           {preview.held.length > 0 && (
@@ -157,8 +214,8 @@ function ImportPanel({ supplierId }: { supplierId: string }) {
             )
           })}
           <Space>
-            <Button type="primary" loading={run.isPending} onClick={() => run.mutate()}>Import</Button>
-            <Button onClick={() => setPreview(null)}>Back</Button>
+            <Button type="primary" loading={run.isPending} onClick={() => run.mutate()}>{t('sup.import.run')}</Button>
+            <Button onClick={() => setPreview(null)}>{t('sup.import.back')}</Button>
           </Space>
         </>
       )}

@@ -84,6 +84,16 @@ const FIXTURES: Record<string, unknown> = {
       { line_id: 'l2', offer_id: 'f2', online_product_id: 'p2', heading: 'Baby Cheramy Soap', label: '75g', boxes: 6,
         units_per_box: 72, units: 432, unit_price: '125.00', line_total: '54000.00' },
     ] },
+  '/suppliers/s1': SUP(1, 'Nishi Super Palace', 14),
+  '/suppliers/s1/catalog': { supplier_id: 's1', supplier_name: 'Nishi Super Palace', header: '', footer: '', sections: [
+    { section_id: 'a', title: 'Milk powder', notes: [], is_active: true, products: [
+      { product_id: 'q1', heading: 'Anchor Milk Powder', notes_before: [], notes_after: [], is_active: true, offers: [
+        { offer_id: 'c1', label: '400g', price: '348.50', mrp: '420.00', units_per_box: 24, extra: [], is_active: true, held_reason: null }, { offer_id: 'c2', label: '1kg', price: '845.00', mrp: '980.00', units_per_box: 12, extra: [], is_active: true, held_reason: null } ] },
+      { product_id: 'q2', heading: 'Lakspray', notes_before: [], notes_after: [], is_active: true, offers: [
+        { offer_id: 'c3', label: '400g', price: '330.00', mrp: '320.00', units_per_box: 24, extra: [], is_active: true, held_reason: 'price_above_mrp' } ] } ] },
+    { section_id: 'b', title: 'Soap', notes: [], is_active: true, products: [
+      { product_id: 'q3', heading: 'Baby Cheramy Soap', notes_before: [], notes_after: [], is_active: true, offers: [
+        { offer_id: 'c4', label: '75g', price: '125.00', mrp: '165.00', units_per_box: 72, extra: [], is_active: true, held_reason: null }, { offer_id: 'c5', label: '100g', price: '150.00', mrp: '190.00', units_per_box: 48, extra: [], is_active: false, held_reason: null } ] } ] } ] },
   '/dashboard/today': {
     approval_mode: 'local', open_total: 17,
     rows: [
@@ -135,7 +145,7 @@ async function fakeApi(page: Page, signedIn: boolean) {
 
 const SCREENS = [
   ['home', '/'], ['suppliers', '/suppliers'], ['orders', '/orders'], ['base-prices', '/base-prices'],
-  ['held', '/held'], ['matching', '/matching'], ['order-submitted', '/orders/o1'], ['order-accepted', '/orders/o2'], ['branches', '/branches'], ['users', '/users'],
+  ['held', '/held'], ['matching', '/matching'], ['order-submitted', '/orders/o1'], ['order-accepted', '/orders/o2'], ['supplier-detail', '/suppliers/s1'], ['branches', '/branches'], ['users', '/users'],
 ] as const
 const SIZES = [['desktop', 1440, 900], ['phone', 390, 844]] as const
 const MODES = ['light', 'dark'] as const
