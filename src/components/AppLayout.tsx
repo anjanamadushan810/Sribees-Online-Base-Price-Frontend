@@ -76,21 +76,30 @@ export default function AppLayout() {
     children: g.items.map((i) => ({ key: i.key, icon: i.icon, label: t(i.label) })),
   }))
 
+  const themeItem = {
+    key: 'theme', icon: THEME_ICON[preference], label: t(THEME_TEXT[preference]), onClick: cycle,
+  }
   const userMenu = (
     <Dropdown placement="bottomRight" menu={{ items: [
+      // On a phone the language and theme switches live here, so the search box keeps its room.
+      ...(phone ? [
+        { key: 'lang', label: lang === 'en' ? 'සිංහල' : 'English', onClick: () => setLang(lang === 'en' ? 'si' : 'en') },
+        themeItem,
+        { type: 'divider' as const },
+      ] : []),
       { key: 'out', icon: <LogoutOutlined />, label: t('top.signOut'), onClick: () => void logout() },
     ] }}>
       <Button type="text" className="user-chip" aria-label={me?.full_name}>
         <Avatar size="small" style={{ background: 'var(--sb-primary)', color: 'var(--sb-primary-text)' }}>
           {me?.full_name.slice(0, 1).toUpperCase()}
         </Avatar>
-        <span className="user-label">{me?.full_name}</span>
-        {me && <span className="role-chip">{t(`role.${me.role}` as TextKey)}</span>}
+        {!phone && <span className="user-label">{me?.full_name}</span>}
+        {!phone && me && <span className="role-chip">{t(`role.${me.role}` as TextKey)}</span>}
       </Button>
     </Dropdown>
   )
 
-  const tools = (
+  const tools = phone ? userMenu : (
     <>
       <Segmented size="small" value={lang} onChange={(v) => setLang(v as 'en' | 'si')}
         aria-label={t('top.language')}

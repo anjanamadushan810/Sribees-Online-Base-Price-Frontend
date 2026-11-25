@@ -49,7 +49,7 @@ export default function LoginPage() {
             <Typography.Title level={3} style={{ margin: 0 }}>
               Sribees Supply
             </Typography.Title>
-            <Typography.Text type="secondary">Sign in to the books</Typography.Text>
+            <Typography.Text type="secondary">Sign in to manage buying and supplier prices</Typography.Text>
           </div>
 
           {error && <Alert type="error" showIcon message={error} />}
