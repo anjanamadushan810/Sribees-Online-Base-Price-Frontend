@@ -7,7 +7,7 @@ import { api, errorMessage } from '../api/client'
 import type { Supplier } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import PageHeader from '../components/PageHeader'
-import { ResponsiveTable } from '../components/ui'
+import { ResponsiveTable } from '../components/ui/ResponsiveTable'
 import { AppLoginFields, BankFields, DetailFields, clean } from './SupplierFields'
 
 export default function Suppliers() {

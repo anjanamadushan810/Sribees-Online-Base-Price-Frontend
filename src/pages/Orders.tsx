@@ -9,7 +9,7 @@ import { formatMoney } from '../api/money'
 import type { Branch, Order, OrderStatus, Supplier } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import PageHeader from '../components/PageHeader'
-import { ResponsiveTable } from '../components/ui'
+import { ResponsiveTable } from '../components/ui/ResponsiveTable'
 
 export default function Orders() {
   const { can } = useAuth()

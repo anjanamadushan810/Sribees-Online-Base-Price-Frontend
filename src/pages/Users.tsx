@@ -7,7 +7,7 @@ import { ROLE_LABEL, when } from '../api/lookups'
 import type { Branch, User } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import PageHeader from '../components/PageHeader'
-import { ResponsiveTable } from '../components/ui'
+import { ResponsiveTable } from '../components/ui/ResponsiveTable'
 
 export default function Users() {
   const { can } = useAuth()

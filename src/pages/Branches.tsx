@@ -6,7 +6,7 @@ import { api, errorMessage } from '../api/client'
 import type { Branch } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import PageHeader from '../components/PageHeader'
-import { ResponsiveTable } from '../components/ui'
+import { ResponsiveTable } from '../components/ui/ResponsiveTable'
 
 export default function Branches() {
   const { can } = useAuth()
