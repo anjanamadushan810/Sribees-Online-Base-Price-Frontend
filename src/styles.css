@@ -155,3 +155,4 @@ tr.total td { background: var(--sb-primary-soft); }
 .todo-text { flex: 1; min-width: 0; }
 .stage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
 .muted-line { color: var(--sb-muted); font-size: 12px; }
+.count-slot { flex: none; width: 52px; display: flex; justify-content: center; }
