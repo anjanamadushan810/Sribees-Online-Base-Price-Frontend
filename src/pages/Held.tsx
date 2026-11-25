@@ -6,7 +6,7 @@ import { HELD_LABEL, when } from '../api/lookups'
 import { formatMoney } from '../api/money'
 import type { HeldOffer } from '../api/types'
 import PageHeader from '../components/PageHeader'
-import { ResponsiveTable } from '../components/ui'
+import { ResponsiveTable } from '../components/ui/ResponsiveTable'
 
 /** Price lines held back: not shared, not orderable, until the supplier fixes them. */
 export default function Held() {

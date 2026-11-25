@@ -6,7 +6,7 @@ import { when } from '../api/lookups'
 import { formatMoney } from '../api/money'
 import type { BasePriceRow, ProductBasePrice } from '../api/types'
 import PageHeader from '../components/PageHeader'
-import { ResponsiveTable } from '../components/ui'
+import { ResponsiveTable } from '../components/ui/ResponsiveTable'
 
 /** Base price = what we actually agreed to pay (written when a supplier accepts an order). */
 export default function BasePrices() {
