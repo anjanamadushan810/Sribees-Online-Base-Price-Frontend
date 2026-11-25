@@ -1,12 +1,13 @@
 import { PlusOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { App, Button, Checkbox, Form, Input, Modal, Select, Table, Tag } from 'antd'
+import { App, Button, Checkbox, Form, Input, Modal, Select, Tag } from 'antd'
 import { useState } from 'react'
 import { api, errorMessage } from '../api/client'
 import { ROLE_LABEL, when } from '../api/lookups'
 import type { Branch, User } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import PageHeader from '../components/PageHeader'
+import { ResponsiveTable } from '../components/ui'
 
 export default function Users() {
   const { can } = useAuth()
@@ -25,7 +26,14 @@ export default function Users() {
     <>
       <PageHeader title="Users" subtitle="Staff who sign in to this web app"
         extra={can('users.write') && <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>New user</Button>} />
-      <Table rowKey="user_id" loading={rows.isLoading} dataSource={rows.data} pagination={false}
+      <ResponsiveTable rowKey="user_id" loading={rows.isLoading} dataSource={rows.data} pagination={false}
+        cardFields={[
+          { label: 'Name', render: (u) => u.full_name },
+          { label: 'Email', render: (u) => u.email },
+          { label: 'Role', render: (u) => ROLE_LABEL[u.role] },
+          { label: 'Branches', render: (u) => (u.all_branches ? 'All' : u.branches.map((b) => b.name).join(', ') || '—') },
+          { label: 'Status', render: (u) => (u.is_active ? <Tag color="green">Active</Tag> : <Tag>Inactive</Tag>) },
+        ]}
         columns={[
           { title: 'Name', dataIndex: 'full_name' },
           { title: 'Email', dataIndex: 'email' },

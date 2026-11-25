@@ -1,11 +1,12 @@
 import { PlusOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { App, Button, Form, Input, Modal, Table, Tag } from 'antd'
+import { App, Button, Form, Input, Modal, Tag } from 'antd'
 import { useState } from 'react'
 import { api, errorMessage } from '../api/client'
 import type { Branch } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import PageHeader from '../components/PageHeader'
+import { ResponsiveTable } from '../components/ui'
 
 export default function Branches() {
   const { can } = useAuth()
@@ -23,7 +24,12 @@ export default function Branches() {
     <>
       <PageHeader title="Branches" subtitle="Where supplier orders are delivered"
         extra={can('branches.write') && <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>New branch</Button>} />
-      <Table rowKey="branch_id" loading={rows.isLoading} dataSource={rows.data} pagination={false}
+      <ResponsiveTable rowKey="branch_id" loading={rows.isLoading} dataSource={rows.data} pagination={false}
+        cardFields={[
+          { label: 'Name', render: (b) => <>{b.name} <span className="muted">{b.code}</span></> },
+          { label: 'Status', render: (b) => (b.is_active ? <Tag color="green">Active</Tag> : <Tag>Inactive</Tag>) },
+          { label: 'Online branch id', render: (b) => b.online_branch_id ?? '—' },
+        ]}
         columns={[
           { title: 'Code', dataIndex: 'code' },
           { title: 'Name', dataIndex: 'name' },
