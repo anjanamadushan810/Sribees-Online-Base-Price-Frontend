@@ -6,6 +6,7 @@ import {
   LogoutOutlined,
   MoonOutlined,
   PauseCircleOutlined,
+  QrcodeOutlined,
   ShopOutlined,
   ShoppingCartOutlined,
   SunOutlined,
@@ -40,6 +41,9 @@ const GROUPS: NavGroup[] = [
     { key: '/matching', label: 'nav.matching', icon: <LinkOutlined />, permission: 'matches.read', main: true },
     { key: '/base-prices', label: 'nav.basePrices', icon: <DollarOutlined />, permission: 'base_prices.read' },
     { key: '/held', label: 'nav.held', icon: <PauseCircleOutlined />, permission: 'suppliers.read' },
+  ] },
+  { label: 'nav.group.stock', items: [
+    { key: '/labels', label: 'nav.labels', icon: <QrcodeOutlined />, permission: 'stock.read' },
   ] },
   { label: 'nav.group.setup', items: [
     { key: '/branches', label: 'nav.branches', icon: <TeamOutlined />, permission: 'branches.read' },
