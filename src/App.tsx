@@ -6,6 +6,7 @@ import LoginPage from './auth/LoginPage'
 import AppLayout from './components/AppLayout'
 
 // Each page is its own chunk: the first load carries only the shell and the login.
+const Home = lazy(() => import('./pages/Home'))
 const BasePrices = lazy(() => import('./pages/BasePrices'))
 const Branches = lazy(() => import('./pages/Branches'))
 const Held = lazy(() => import('./pages/Held'))
@@ -23,7 +24,7 @@ export default function App() {
   return (
     <Routes>
         <Route element={<AppLayout />}>
-          <Route index element={<Navigate to="/suppliers" replace />} />
+          <Route index element={<Home />} />
           <Route path="/suppliers" element={<Suppliers />} />
           <Route path="/suppliers/:id" element={<SupplierDetail />} />
           <Route path="/matching" element={<Matching />} />
@@ -33,7 +34,7 @@ export default function App() {
           <Route path="/held" element={<Held />} />
           <Route path="/branches" element={<Branches />} />
           <Route path="/users" element={<Users />} />
-          <Route path="*" element={<Navigate to="/suppliers" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
     </Routes>
   )

@@ -1,6 +1,7 @@
 import {
   BulbOutlined,
   DollarOutlined,
+  HomeOutlined,
   LinkOutlined,
   LogoutOutlined,
   MoonOutlined,
@@ -28,13 +29,16 @@ interface NavItem { key: string; label: TextKey; icon: ReactNode; permission: st
 interface NavGroup { label: TextKey; items: NavItem[] }
 
 const GROUPS: NavGroup[] = [
+  { label: 'nav.group.home', items: [
+    { key: '/', label: 'nav.home', icon: <HomeOutlined />, permission: 'suppliers.read', main: true },
+  ] },
   { label: 'nav.group.buy', items: [
     { key: '/orders', label: 'nav.orders', icon: <ShoppingCartOutlined />, permission: 'orders.read', main: true },
     { key: '/suppliers', label: 'nav.suppliers', icon: <ShopOutlined />, permission: 'suppliers.read', main: true },
   ] },
   { label: 'nav.group.prices', items: [
     { key: '/matching', label: 'nav.matching', icon: <LinkOutlined />, permission: 'matches.read', main: true },
-    { key: '/base-prices', label: 'nav.basePrices', icon: <DollarOutlined />, permission: 'base_prices.read', main: true },
+    { key: '/base-prices', label: 'nav.basePrices', icon: <DollarOutlined />, permission: 'base_prices.read' },
     { key: '/held', label: 'nav.held', icon: <PauseCircleOutlined />, permission: 'suppliers.read' },
   ] },
   { label: 'nav.group.setup', items: [
@@ -64,7 +68,7 @@ export default function AppLayout() {
     [can],
   )
   const flat = groups.flatMap((g) => g.items)
-  const selected = flat.find((n) => location.pathname.startsWith(n.key))?.key
+  const selected = flat.find((n) => n.key === '/' ? location.pathname === '/' : location.pathname.startsWith(n.key))?.key
   const focusSearch = useCallback(() => searchRef.current?.focus(), [])
   const allowed = useMemo(() => ({ o: can('orders.read'), s: can('suppliers.read'), m: can('matches.read') }), [can])
   useShortcuts(focusSearch, allowed)
@@ -72,7 +76,7 @@ export default function AppLayout() {
   const go = (key: string) => { setMore(false); navigate(key) }
 
   const menuItems = groups.map((g) => ({
-    type: 'group' as const, key: g.label, label: collapsed ? null : t(g.label),
+    type: 'group' as const, key: g.label, label: collapsed || g.label === 'nav.group.home' ? null : t(g.label),
     children: g.items.map((i) => ({ key: i.key, icon: i.icon, label: t(i.label) })),
   }))
 
