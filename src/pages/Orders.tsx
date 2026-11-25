@@ -87,6 +87,7 @@ export default function Orders() {
         {fmt(t('ord.summary'), { n: sum.count, total: formatMoney(sum.total.toFixed(2)) })}
       </div>
       <ResponsiveTable rowKey="order_id" loading={orders.isLoading} dataSource={rows}
+        pagination={{ pageSize: 50, hideOnSinglePage: true }}
         locale={{ emptyText: <EmptyState title={t('ord.empty')} /> }}
         onCardClick={(r) => navigate(`/orders/${r.order_id}`)}
         cardFields={[

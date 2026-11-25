@@ -1,9 +1,10 @@
 import { LockOutlined, MailOutlined, SafetyOutlined } from '@ant-design/icons'
 import { Alert, Button, Card, Form, Input, QRCode, Space, Steps, Typography } from 'antd'
 import { useState } from 'react'
-import { errorMessage } from '../api/client'
 import type { Step } from '../api/types'
+import { useT } from '../i18n'
 import { useAuth } from './AuthContext'
+import { loginErrorText } from './loginLogic'
 
 type Stage =
   | { kind: 'password' }
@@ -12,6 +13,8 @@ type Stage =
 
 export default function LoginPage() {
   const auth = useAuth()
+  const { t, lang, setLang } = useT()
+  const [caps, setCaps] = useState(false)
   const [stage, setStage] = useState<Stage>({ kind: 'password' })
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -22,7 +25,7 @@ export default function LoginPage() {
     try {
       await action()
     } catch (e) {
-      setError(errorMessage(e))
+      setError(loginErrorText(e, { bad: t('login.bad'), tooMany: t('login.tooMany'), offline: t('login.offline') }))
     } finally {
       setBusy(false)
     }
@@ -45,33 +48,42 @@ export default function LoginPage() {
     <div className="login-page">
       <Card className="login-card">
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
-          <div>
-            <Typography.Title level={3} style={{ margin: 0 }}>
-              Sribees Supply
-            </Typography.Title>
-            <Typography.Text type="secondary">Sign in to manage buying and supplier prices</Typography.Text>
+          <div className="login-head">
+            <span className="brand-mark" aria-hidden>S</span>
+            <div style={{ flex: 1 }}>
+              <Typography.Title level={3} style={{ margin: 0 }}>{t('login.title')}</Typography.Title>
+              <Typography.Text type="secondary">{t('login.sub')}</Typography.Text>
+            </div>
+            <Button type="text" size="small" onClick={() => setLang(lang === 'en' ? 'si' : 'en')}>
+              {lang === 'en' ? 'සිංහල' : 'English'}
+            </Button>
           </div>
 
-          {error && <Alert type="error" showIcon message={error} />}
+          {error && <Alert type="error" showIcon role="alert" message={error} />}
 
           {stage.kind === 'password' && (
             <Form layout="vertical" onFinish={onPassword} requiredMark={false}>
-              <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>
-                <Input prefix={<MailOutlined />} autoComplete="username" autoFocus />
+              <Form.Item name="email" label={t('login.email')} rules={[{ required: true, type: 'email' }]}>
+                <Input prefix={<MailOutlined />} autoComplete="username" autoFocus inputMode="email" />
               </Form.Item>
-              <Form.Item name="password" label="Password" rules={[{ required: true }]}>
-                <Input.Password prefix={<LockOutlined />} autoComplete="current-password" />
+              <Form.Item name="password" label={t('login.password')} rules={[{ required: true }]}
+                extra={caps ? <Typography.Text type="warning" role="status">{t('login.caps')}</Typography.Text> : undefined}>
+                <Input.Password prefix={<LockOutlined />} autoComplete="current-password"
+                  onKeyUp={(e) => setCaps(e.getModifierState('CapsLock'))} onBlur={() => setCaps(false)} />
               </Form.Item>
               <Button type="primary" htmlType="submit" block loading={busy}>
-                Continue
+                {t('login.continue')}
               </Button>
+              <Typography.Paragraph type="secondary" style={{ marginTop: 12, marginBottom: 0, fontSize: 13 }}>
+                {t('login.forgot')}
+              </Typography.Paragraph>
             </Form>
           )}
 
           {stage.kind === 'code' && (
             <CodeForm
               busy={busy}
-              label="Enter the 6-digit code from your authenticator app"
+              label={t('login.code')}
               onSubmit={(code) => run(() => auth.verifyTotp(stage.ticket, code))}
               onBack={() => setStage({ kind: 'password' })}
             />
@@ -82,23 +94,20 @@ export default function LoginPage() {
               <Steps
                 size="small"
                 current={1}
-                items={[{ title: 'Password' }, { title: 'Set up 2FA' }, { title: 'Done' }]}
+                items={[{ title: t('login.step.password') }, { title: t('login.step.setup') }, { title: t('login.step.done') }]}
               />
-              <Typography.Paragraph>
-                Two-step sign-in is required. Scan this code with Google Authenticator,
-                Microsoft Authenticator or a similar app, then enter the code it shows.
-              </Typography.Paragraph>
+              <Typography.Paragraph>{t('login.setup')}</Typography.Paragraph>
               {stage.uri && (
                 <div style={{ display: 'flex', justifyContent: 'center' }}>
                   <QRCode value={stage.uri} size={180} />
                 </div>
               )}
               <Typography.Text type="secondary">
-                Can't scan? Enter this key: <Typography.Text code copyable>{stage.secret}</Typography.Text>
+                {t('login.cantScan')} <Typography.Text code copyable>{stage.secret}</Typography.Text>
               </Typography.Text>
               <CodeForm
                 busy={busy}
-                label="Code from the app"
+                label={t('login.codeShort')}
                 onSubmit={(code) => run(() => auth.enableTotp(stage.ticket, code))}
                 onBack={() => setStage({ kind: 'password' })}
               />
@@ -116,12 +125,13 @@ function CodeForm(props: {
   onSubmit: (code: string) => void
   onBack: () => void
 }) {
+  const { t } = useT()
   return (
     <Form layout="vertical" onFinish={(v: { code: string }) => props.onSubmit(v.code)} requiredMark={false}>
       <Form.Item
         name="code"
         label={props.label}
-        rules={[{ required: true, pattern: /^\d{6}$/, message: 'Six digits' }]}
+        rules={[{ required: true, pattern: /^\d{6}$/, message: t('login.sixDigits') }]}
       >
         <Input
           prefix={<SafetyOutlined />}
@@ -132,9 +142,9 @@ function CodeForm(props: {
         />
       </Form.Item>
       <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-        <Button onClick={props.onBack}>Back</Button>
+        <Button onClick={props.onBack}>{t('login.back')}</Button>
         <Button type="primary" htmlType="submit" loading={props.busy}>
-          Verify
+          {t('login.verify')}
         </Button>
       </Space>
     </Form>

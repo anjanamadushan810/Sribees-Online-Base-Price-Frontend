@@ -238,6 +238,27 @@ export const en = {
   "sup.import.seePrices": "See the price list",
   "sup.import.old": "Old",
   "sup.import.newPrice": "New",
+  // sign-in page
+  "login.title": "Sribees Supply",
+  "login.sub": "Sign in to manage buying and supplier prices",
+  "login.email": "Email",
+  "login.password": "Password",
+  "login.continue": "Continue",
+  "login.caps": "Caps Lock is on",
+  "login.forgot": "Forgot your password? Ask the owner to set a new one.",
+  "login.bad": "The email or password is not right. Check them and try again.",
+  "login.tooMany": "Too many tries. Wait a few minutes, then try again.",
+  "login.offline": "Cannot reach the server. Check the internet connection.",
+  "login.code": "Enter the 6-digit code from your authenticator app",
+  "login.codeShort": "Code from the app",
+  "login.sixDigits": "Six digits",
+  "login.back": "Back",
+  "login.verify": "Verify",
+  "login.step.password": "Password",
+  "login.step.setup": "Set up 2FA",
+  "login.step.done": "Done",
+  "login.setup": "Two-step sign-in is required. Scan this code with Google Authenticator, Microsoft Authenticator or a similar app, then enter the code it shows.",
+  "login.cantScan": "Cannot scan? Enter this key:",
 } as const
 
 export type TextKey = keyof typeof en
