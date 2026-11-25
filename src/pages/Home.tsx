@@ -38,8 +38,8 @@ export default function Home() {
         <TodayCard q={today} />
         {can('orders.read') && <OrdersCard q={summary} />}
         <Row gutter={[16, 16]}>
-          <Col xs={24} xl={12}><ChangesCard q={changes} /></Col>
-          <Col xs={24} xl={12}><InsightCard q={insight} /></Col>
+          <Col xs={24} xxl={12}><ChangesCard q={changes} /></Col>
+          <Col xs={24} xxl={12}><InsightCard q={insight} /></Col>
         </Row>
       </Space>
     </>
@@ -82,9 +82,11 @@ function TodayCard({ q }: { q: Q<TodayOut> }) {
           <ul className="todo-list">
             {rows.map((r: TodayRow) => (
               <li key={r.key}>
-                <StatusPill tone={r.key === 'declined' || r.key === 'held' ? 'danger' : 'warning'}>
-                  <span className="num">{r.count}</span>
-                </StatusPill>
+                <span className="count-slot">
+                  <StatusPill tone={r.key === 'declined' || r.key === 'held' ? 'danger' : 'warning'}>
+                    <span className="num">{r.count}</span>
+                  </StatusPill>
+                </span>
                 <span className="todo-text">
                   {t((r.key === 'approve' && r.in_finance ? 'home.row.approveFinance'
                     : `home.row.${r.key}`) as TextKey)}
@@ -117,14 +119,13 @@ function OrdersCard({ q }: { q: Q<OrdersSummary> }) {
   const { t } = useT()
   const navigate = useNavigate()
   return (
-    <Section q={q} title={t('home.orders')} extra={
-      q.data && (
-        <Typography.Text type="secondary">
-          {t('home.week')}: <b className="num">{q.data.week_orders}</b> {t('home.weekOrders')} · Rs{' '}
-          <Money value={q.data.week_value} />
-        </Typography.Text>
-      )}>
+    <Section q={q} title={t('home.orders')}>
       {(d) => (
+        <>
+        <Typography.Paragraph type="secondary">
+          {t('home.week')}: <b className="num">{d.week_orders}</b> {t('home.weekOrders')} · Rs{' '}
+          <Money value={d.week_value} />
+        </Typography.Paragraph>
         <div className="stage-grid">
           {Object.entries(d.stages).map(([k, n]) => (
             <StatCard key={k} label={t(`home.stage.${k}` as TextKey)} value={n}
@@ -132,6 +133,7 @@ function OrdersCard({ q }: { q: Q<OrdersSummary> }) {
               onClick={() => navigate(STAGE_ROUTE[k])} />
           ))}
         </div>
+        </>
       )}
     </Section>
   )
@@ -145,12 +147,13 @@ function ChangesCard({ q }: { q: Q<PriceChanges> }) {
     () => (q.data?.items ?? []).filter((i) => !onlyUp || Number(i.new_price) > Number(i.old_price)),
     [q.data, onlyUp])
   return (
-    <Section q={q} title={`${t('home.prices')} ${t('home.pricesDays')}`} extra={
-      <Space size={6}>
-        <Switch size="small" checked={onlyUp} onChange={setOnlyUp} aria-label={t('home.onlyIncreases')} />
-        <Typography.Text type="secondary">{t('home.onlyIncreases')}</Typography.Text>
-      </Space>}>
+    <Section q={q} title={`${t('home.prices')} ${t('home.pricesDays')}`}>
       {() => (
+        <>
+        <Space size={6} style={{ marginBottom: 12 }}>
+          <Switch size="small" checked={onlyUp} onChange={setOnlyUp} aria-label={t('home.onlyIncreases')} />
+          <Typography.Text type="secondary">{t('home.onlyIncreases')}</Typography.Text>
+        </Space>
         <ResponsiveTable rowKey={(r) => `${r.offer_id}:${r.changed_at}`} dataSource={items}
           pagination={{ pageSize: 6, hideOnSinglePage: true }} size="small"
           locale={{ emptyText: <Typography.Text type="secondary">{t('home.noChanges')}</Typography.Text> }}
@@ -170,6 +173,7 @@ function ChangesCard({ q }: { q: Q<PriceChanges> }) {
               </Space>) },
             { title: t('home.when'), dataIndex: 'changed_at', render: (v: string) => when(v) },
           ]} />
+        </>
       )}
     </Section>
   )
