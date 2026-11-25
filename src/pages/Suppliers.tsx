@@ -1,12 +1,13 @@
 import { PlusOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Alert, App, Button, Form, Modal, Table, Tag, Typography } from 'antd'
+import { Alert, App, Button, Form, Modal, Tag, Typography } from 'antd'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, errorMessage } from '../api/client'
 import type { Supplier } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import PageHeader from '../components/PageHeader'
+import { ResponsiveTable } from '../components/ui'
 import { AppLoginFields, BankFields, DetailFields, clean } from './SupplierFields'
 
 export default function Suppliers() {
@@ -40,7 +41,14 @@ export default function Suppliers() {
             New supplier
           </Button>
         )} />
-      <Table rowKey="supplier_id" loading={list.isLoading} dataSource={list.data}
+      <ResponsiveTable rowKey="supplier_id" loading={list.isLoading} dataSource={list.data}
+        onCardClick={(r) => navigate(`/suppliers/${r.supplier_id}`)}
+        cardFields={[
+          { label: 'Name', render: (r) => <>{r.name} <span className="muted">{r.code}</span></> },
+          { label: 'Contact', render: (r) => r.contact_name ?? r.phone ?? '—' },
+          { label: 'Credit days', render: (r) => (r.credit_days === 0 ? 'Cash' : r.credit_days) },
+          { label: 'Status', render: (r) => (r.is_active ? <Tag color="green">Active</Tag> : <Tag>Inactive</Tag>) },
+        ]}
         onRow={(r) => ({ onClick: () => navigate(`/suppliers/${r.supplier_id}`), style: { cursor: 'pointer' } })}
         columns={[
           { title: 'Code', dataIndex: 'code', width: 110 },

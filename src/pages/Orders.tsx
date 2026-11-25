@@ -1,6 +1,6 @@
 import { PlusOutlined } from '@ant-design/icons'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { App, Button, Form, Input, Modal, Select, Space, Table, Tag } from 'antd'
+import { App, Button, Form, Input, Modal, Select, Space, Tag } from 'antd'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, errorMessage } from '../api/client'
@@ -9,6 +9,7 @@ import { formatMoney } from '../api/money'
 import type { Branch, Order, OrderStatus, Supplier } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import PageHeader from '../components/PageHeader'
+import { ResponsiveTable } from '../components/ui'
 
 export default function Orders() {
   const { can } = useAuth()
@@ -46,7 +47,15 @@ export default function Orders() {
         <Select allowClear placeholder="Any status" style={{ width: 200 }} value={status} onChange={setStatus}
           options={Object.entries(ORDER_STATUS).map(([value, s]) => ({ value, label: s.label }))} />
       </Space>
-      <Table rowKey="order_id" loading={orders.isLoading} dataSource={orders.data}
+      <ResponsiveTable rowKey="order_id" loading={orders.isLoading} dataSource={orders.data}
+        onCardClick={(r) => navigate(`/orders/${r.order_id}`)}
+        cardFields={[
+          { label: 'Order', render: (r) => <>{r.order_no} <span className="muted">{r.supplier_name}</span></> },
+          { label: 'Status', render: (r) => <Tag color={ORDER_STATUS[r.status].color}>{ORDER_STATUS[r.status].label}</Tag> },
+          { label: 'Branch', render: (r) => r.branch_name },
+          { label: 'Total (Rs)', render: (r) => formatMoney(r.total) },
+          { label: 'Created', render: (r) => when(r.created_at) },
+        ]}
         onRow={(r) => ({ onClick: () => navigate(`/orders/${r.order_id}`), style: { cursor: 'pointer' } })}
         columns={[
           { title: 'Order', dataIndex: 'order_no' },

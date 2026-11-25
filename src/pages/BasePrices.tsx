@@ -6,6 +6,7 @@ import { when } from '../api/lookups'
 import { formatMoney } from '../api/money'
 import type { BasePriceRow, ProductBasePrice } from '../api/types'
 import PageHeader from '../components/PageHeader'
+import { ResponsiveTable } from '../components/ui'
 
 /** Base price = what we actually agreed to pay (written when a supplier accepts an order). */
 export default function BasePrices() {
@@ -21,7 +22,15 @@ export default function BasePrices() {
       <PageHeader title="Base prices" subtitle="The price we last agreed with a supplier, per product" />
       <Input.Search allowClear placeholder="Search product or supplier" style={{ maxWidth: 320, marginBottom: 12 }}
         onChange={(e) => setQ(e.target.value)} />
-      <Table rowKey={(r) => `${r.online_product_id}:${r.online_variant_id ?? ''}`} loading={rows.isLoading} dataSource={data}
+      <ResponsiveTable rowKey={(r) => `${r.online_product_id}:${r.online_variant_id ?? ''}`} loading={rows.isLoading} dataSource={data}
+        onCardClick={(r) => setOpen(r.online_product_id)}
+        cardFields={[
+          { label: 'Product', render: (r) => r.product_name },
+          { label: 'Base price (Rs)', render: (r) => formatMoney(r.unit_price) },
+          { label: 'Selling price', render: (r) => formatMoney(r.mrp) },
+          { label: 'Supplier', render: (r) => r.supplier_name },
+          { label: 'Since', render: (r) => when(r.recorded_at) },
+        ]}
         onRow={(r) => ({ onClick: () => setOpen(r.online_product_id), style: { cursor: 'pointer' } })}
         columns={[
           { title: 'Product', dataIndex: 'product_name' },
