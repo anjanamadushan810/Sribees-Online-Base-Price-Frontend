@@ -9,7 +9,9 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: { antd: ['antd', '@ant-design/icons'], react: ['react', 'react-dom', 'react-router-dom'] },
+        // Only React is pinned: antd modules fall into the chunk of the first page that needs
+        // them, so a page's antd code is not downloaded until that page is opened.
+        manualChunks: { react: ['react', 'react-dom', 'react-router-dom'] },
       },
     },
     // antd alone is ~1.3 MB (400 kB gzipped) and is cached after the first visit.
@@ -28,5 +30,6 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['src/test/setup.ts'],
+    include: ['src/**/*.test.{ts,tsx}'],
   },
 })
