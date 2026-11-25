@@ -44,6 +44,24 @@ const FIXTURES: Record<string, unknown> = {
       unit_price: '348.50', mrp: '420.00', recorded_at: '2026-11-18T10:00:00Z', voided_at: null,
       product_name: 'Anchor milk powder 400g', supplier_name: 'Lanka Distributors' },
   ],
+  '/suppliers/s1/matching': [
+    { offer_id: 'm1', heading: 'Anchor Milk Powder', label: '400g', price: '348.50', mrp: '420.00',
+      units_per_box: 24, confirmed: null, suggestions: [
+        { online_product_id: 'p2', online_variant_id: null, name: 'Anchor milk powder 400g',
+          name_si: 'ඇන්කර් කිරි පිටි 400g', sku: 'ANC400', size: '400 g', score: 0.93 },
+        { online_product_id: 'p9', online_variant_id: null, name: 'Anchor milk powder 1kg',
+          name_si: null, sku: 'ANC1000', size: '1 kg', score: 0.64 }] },
+    { offer_id: 'm2', heading: 'Baby Cheramy Soap', label: '75g', price: '125.00', mrp: '165.00',
+      units_per_box: 72, confirmed: null, suggestions: [
+        { online_product_id: 'p1', online_variant_id: null, name: 'Baby Cheramy soap 75g',
+          name_si: null, sku: 'BC75', size: '75 g', score: 0.71 }] },
+    { offer_id: 'm3', heading: 'Sunlight Detergent', label: '1kg', price: '410.00', mrp: null,
+      units_per_box: null, confirmed: null, suggestions: [] },
+    { offer_id: 'm4', heading: 'Lanka Sugar', label: '1kg', price: '259.00', mrp: '280.00',
+      units_per_box: 20, suggestions: [], confirmed: { online_product_id: 'p7',
+        online_variant_id: null, name: 'Lanka white sugar 1kg', name_si: null, sku: 'SUG1',
+        size: '1 kg', score: null } },
+  ],
   '/dashboard/today': {
     approval_mode: 'local', open_total: 17,
     rows: [
@@ -95,7 +113,7 @@ async function fakeApi(page: Page, signedIn: boolean) {
 
 const SCREENS = [
   ['home', '/'], ['suppliers', '/suppliers'], ['orders', '/orders'], ['base-prices', '/base-prices'],
-  ['held', '/held'], ['branches', '/branches'], ['users', '/users'],
+  ['held', '/held'], ['matching', '/matching'], ['branches', '/branches'], ['users', '/users'],
 ] as const
 const SIZES = [['desktop', 1440, 900], ['phone', 390, 844]] as const
 const MODES = ['light', 'dark'] as const
