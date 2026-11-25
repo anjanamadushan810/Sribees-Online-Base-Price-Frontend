@@ -9,6 +9,7 @@ import { formatMoney } from '../api/money'
 import type { Branch, Order, OrderStatus, Supplier } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import PageHeader from '../components/PageHeader'
+import { SyncOnlineButton } from '../components/SyncOnline'
 import { ResponsiveTable } from '../components/ui/ResponsiveTable'
 
 export default function Orders() {
@@ -76,6 +77,10 @@ export default function Orders() {
           </Form.Item>
           <Form.Item name="branch_id" label="Deliver to branch" rules={[{ required: true }]}>
             <Select loading={branches.isLoading}
+              notFoundContent={<div style={{ padding: 8 }}>
+                <div style={{ marginBottom: 8 }}>No branches yet. Bring them in from SRIBEESonline:</div>
+                <SyncOnlineButton type="primary" />
+              </div>}
               options={branches.data?.filter((b) => b.is_active).map((b) => ({ value: b.branch_id, label: b.name }))} />
           </Form.Item>
           <Form.Item name="note" label="Note"><Input.TextArea rows={2} /></Form.Item>

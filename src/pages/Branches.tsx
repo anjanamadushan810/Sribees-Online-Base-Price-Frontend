@@ -1,11 +1,13 @@
 import { PlusOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { App, Button, Form, Input, Modal, Tag } from 'antd'
+import { App, Button, Form, Input, Modal, Space, Tag } from 'antd'
 import { useState } from 'react'
 import { api, errorMessage } from '../api/client'
 import type { Branch } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import PageHeader from '../components/PageHeader'
+import { SyncOnlineButton } from '../components/SyncOnline'
+import { EmptyState } from '../components/ui'
 import { ResponsiveTable } from '../components/ui/ResponsiveTable'
 
 export default function Branches() {
@@ -23,8 +25,12 @@ export default function Branches() {
   return (
     <>
       <PageHeader title="Branches" subtitle="Where supplier orders are delivered"
-        extra={can('branches.write') && <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>New branch</Button>} />
+        extra={<Space wrap>
+          <SyncOnlineButton type="primary" />
+          {can('branches.write') && <Button icon={<PlusOutlined />} onClick={() => setOpen(true)}>New branch by hand</Button>}
+        </Space>} />
       <ResponsiveTable rowKey="branch_id" loading={rows.isLoading} dataSource={rows.data} pagination={false}
+        locale={{ emptyText: <EmptyState title="No branches yet. Press “Sync from Online” to bring in SRIBEESonline's branches." /> }}
         cardFields={[
           { label: 'Name', render: (b) => <>{b.name} <span className="muted">{b.code}</span></> },
           { label: 'Status', render: (b) => (b.is_active ? <Tag color="green">Active</Tag> : <Tag>Inactive</Tag>) },
