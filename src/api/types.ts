@@ -49,11 +49,23 @@ export interface SupplierUser {
 
 export interface Supplier {
   supplier_id: string
+  code: string
   name: string
   notes: string | null
   is_active: boolean
   created_at: string
+  contact_name: string | null
+  phone: string | null
+  email: string | null
+  address: string | null
+  credit_days: number
+  is_related_party: boolean
   users: SupplierUser[]
+  // Bank details are sent only to owner and accountant (the keys are absent otherwise).
+  bank_name?: string | null
+  bank_branch?: string | null
+  bank_account_name?: string | null
+  bank_account_no?: string | null
 }
 
 export interface Offer {

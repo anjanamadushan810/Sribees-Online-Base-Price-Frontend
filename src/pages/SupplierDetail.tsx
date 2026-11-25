@@ -13,6 +13,7 @@ import type { Catalog, ImportPreview, ImportResult, Supplier, SupplierUser } fro
 import { useAuth } from '../auth/AuthContext'
 import PageHeader from '../components/PageHeader'
 import MatchingPanel from './MatchingPanel'
+import SupplierDetails from './SupplierDetails'
 
 export default function SupplierDetail() {
   const { id = '' } = useParams()
@@ -25,9 +26,10 @@ export default function SupplierDetail() {
   return (
     <>
       <PageHeader back="/suppliers" title={s?.name ?? '…'}
-        subtitle={s?.notes ?? undefined}
+        subtitle={s ? `${s.code}${s.notes ? ` · ${s.notes}` : ''}` : undefined}
         extra={s && !s.is_active && <Tag>Inactive</Tag>} />
       <Tabs items={[
+        { key: 'details', label: 'Details', children: s ? <SupplierDetails supplier={s} /> : null },
         { key: 'prices', label: 'Price list', children: <CatalogView supplierId={id} /> },
         ...(can('suppliers.write')
           ? [{ key: 'import', label: 'Import WhatsApp list', children: <ImportPanel supplierId={id} /> }]
