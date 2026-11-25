@@ -207,6 +207,33 @@ for (const mode of MODES) {
         await page.screenshot({ path: `shots/${mode}-${size}-held-si.png`, fullPage: true })
       })
 
+      test('accessibility audit (axe)', async ({ page }) => {
+        // A report, not a gate yet: findings are fixed in the next round, then this becomes a gate.
+        await fakeApi(page, true)
+        const report: Record<string, unknown> = {}
+        for (const [name, path] of SCREENS) {
+          await page.goto(path)
+          await expect(page.locator('h1')).toBeVisible()
+          await page.waitForTimeout(300)
+          try {
+            await page.addScriptTag({ url: 'https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js' })
+            const result = await page.evaluate(async () => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const r = await (window as any).axe.run(document, { resultTypes: ['violations'] })
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              return r.violations.map((v: any) => ({ id: v.id, impact: v.impact, help: v.help,
+                nodes: v.nodes.length, sample: v.nodes[0]?.html?.slice(0, 140) }))
+            })
+            report[name] = result
+          } catch (e) {
+            report[name] = { error: String(e).slice(0, 200) }
+          }
+        }
+        const fs = await import('node:fs')
+        fs.mkdirSync('shots', { recursive: true })
+        fs.writeFileSync(`shots/a11y-${mode}-${size}.json`, JSON.stringify(report, null, 2))
+      })
+
       test('base price drawer', async ({ page }) => {
         await fakeApi(page, true)
         await page.goto('/base-prices')
