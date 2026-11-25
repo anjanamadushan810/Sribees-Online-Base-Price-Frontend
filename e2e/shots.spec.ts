@@ -94,6 +94,24 @@ const FIXTURES: Record<string, unknown> = {
     { section_id: 'b', title: 'Soap', notes: [], is_active: true, products: [
       { product_id: 'q3', heading: 'Baby Cheramy Soap', notes_before: [], notes_after: [], is_active: true, offers: [
         { offer_id: 'c4', label: '75g', price: '125.00', mrp: '165.00', units_per_box: 72, extra: [], is_active: true, held_reason: null }, { offer_id: 'c5', label: '100g', price: '150.00', mrp: '190.00', units_per_box: 48, extra: [], is_active: false, held_reason: null } ] } ] } ] },
+  '/held-offers': [
+    { offer_id: 'h1', supplier_id: 's1', supplier_name: 'Nishi Super Palace', heading: 'Lakspray', label: '400g',
+      price: '330.00', mrp: '320.00', held_reason: 'price_above_mrp', updated_at: '2026-11-25T01:00:00Z' },
+    { offer_id: 'h2', supplier_id: 's1', supplier_name: 'Nishi Super Palace', heading: 'Sunlight', label: '1kg',
+      price: '455.00', mrp: '440.00', held_reason: 'price_above_mrp', updated_at: '2026-11-24T05:30:00Z' },
+    { offer_id: 'h3', supplier_id: 's2', supplier_name: 'Lanka Distributors', heading: 'Maggi Noodles', label: '400g',
+      price: '260.00', mrp: '250.00', held_reason: 'price_above_mrp', updated_at: '2026-11-23T09:00:00Z' },
+  ],
+  '/base-prices/p1': { online_product_id: 'p1', name: 'Baby Cheramy soap 75g',
+    offers: [
+      { offer_id: 'o1', supplier_id: 's1', supplier_name: 'Nishi Super Palace', heading: 'Baby Cheramy Soap', label: '75g', price: '125.00', mrp: '165.00', units_per_box: 72 },
+      { offer_id: 'o2', supplier_id: 's2', supplier_name: 'Lanka Distributors', heading: 'Baby Cheramy', label: '75g', price: '131.50', mrp: '165.00', units_per_box: 48 },
+      { offer_id: 'o3', supplier_id: 's3', supplier_name: 'Ceylon Foods (Pvt) Ltd', heading: 'Cheramy Baby', label: '75g', price: '122.00', mrp: '165.00', units_per_box: 60 } ],
+    history: [
+      { online_product_id: 'p1', online_variant_id: null, supplier_id: 's1', order_id: 'o9', unit_price: '118.00', mrp: '165.00', recorded_at: '2026-09-02T10:00:00Z', voided_at: null },
+      { online_product_id: 'p1', online_variant_id: null, supplier_id: 's1', order_id: 'o8', unit_price: '121.00', mrp: '165.00', recorded_at: '2026-10-05T10:00:00Z', voided_at: null },
+      { online_product_id: 'p1', online_variant_id: null, supplier_id: 's1', order_id: 'o7', unit_price: '119.00', mrp: '165.00', recorded_at: '2026-10-28T10:00:00Z', voided_at: '2026-10-29T10:00:00Z' },
+      { online_product_id: 'p1', online_variant_id: null, supplier_id: 's1', order_id: 'o2', unit_price: '125.00', mrp: '165.00', recorded_at: '2026-11-20T10:00:00Z', voided_at: null } ] },
   '/dashboard/today': {
     approval_mode: 'local', open_total: 17,
     rows: [
@@ -125,7 +143,6 @@ const FIXTURES: Record<string, unknown> = {
       { online_product_id: 'p2', product_name: 'Anchor milk powder 400g', base_price: '352.00', base_supplier: 'Lanka Distributors', best_price: '340.00', best_supplier: 'Ceylon Foods (Pvt) Ltd', saving: '12.00', saving_pct: 3.4, last_paid_at: '2026-11-18T10:00:00Z' },
     ],
   },
-  '/held-offers': [],
   '/branches': [{ branch_id: 'b1', code: 'MTG', name: 'Matugama', online_branch_id: 'x', is_active: true }],
   '/users': [ME],
 }
@@ -179,6 +196,24 @@ for (const mode of MODES) {
         await expect(page.locator('h1')).toBeVisible()
         await page.waitForTimeout(400)
         await page.screenshot({ path: `shots/${mode}-${size}-sinhala.png` })
+      })
+
+      test('sinhala held prices', async ({ page }) => {
+        await fakeApi(page, true)
+        await page.addInitScript(() => localStorage.setItem('sb.lang', 'si'))
+        await page.goto('/held')
+        await expect(page.locator('h1')).toBeVisible()
+        await page.waitForTimeout(400)
+        await page.screenshot({ path: `shots/${mode}-${size}-held-si.png`, fullPage: true })
+      })
+
+      test('base price drawer', async ({ page }) => {
+        await fakeApi(page, true)
+        await page.goto('/base-prices')
+        await page.getByText('Baby Cheramy soap 75g').first().click()
+        await expect(page.getByText('What suppliers offer today')).toBeVisible()
+        await page.waitForTimeout(500)
+        await page.screenshot({ path: `shots/${mode}-${size}-base-price-drawer.png` })
       })
     })
   }

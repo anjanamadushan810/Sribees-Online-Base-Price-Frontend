@@ -1,16 +1,19 @@
 import { PlusOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { App, Button, Checkbox, Form, Input, Modal, Select, Tag } from 'antd'
+import { App, Button, Checkbox, Form, Input, Modal, Select } from 'antd'
 import { useState } from 'react'
 import { api, errorMessage } from '../api/client'
 import { ROLE_LABEL, when } from '../api/lookups'
 import type { Branch, User } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import PageHeader from '../components/PageHeader'
+import { StatusPill } from '../components/ui'
 import { ResponsiveTable } from '../components/ui/ResponsiveTable'
+import { useT } from '../i18n'
 
 export default function Users() {
   const { can } = useAuth()
+  const { t } = useT()
   const { message } = App.useApp()
   const qc = useQueryClient()
   const [open, setOpen] = useState(false)
@@ -22,25 +25,27 @@ export default function Users() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); setOpen(false); form.resetFields() },
     onError: (e) => message.error(errorMessage(e)),
   })
+  const pill = (on: boolean) => <StatusPill tone={on ? 'success' : 'neutral'}>{on ? t('sup.active') : t('sup.inactive')}</StatusPill>
+  const role = (r: User['role']) => <StatusPill tone="info">{t(`role.chip.${r}`)}</StatusPill>
   return (
     <>
-      <PageHeader title="Users" subtitle="Staff who sign in to this web app"
-        extra={can('users.write') && <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>New user</Button>} />
+      <PageHeader title={t('usr.title')} subtitle={t('usr.subtitle')}
+        extra={can('users.write') && <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>{t('usr.new')}</Button>} />
       <ResponsiveTable rowKey="user_id" loading={rows.isLoading} dataSource={rows.data} pagination={false}
         cardFields={[
-          { label: 'Name', render: (u) => u.full_name },
-          { label: 'Email', render: (u) => u.email },
-          { label: 'Role', render: (u) => ROLE_LABEL[u.role] },
-          { label: 'Branches', render: (u) => (u.all_branches ? 'All' : u.branches.map((b) => b.name).join(', ') || '—') },
-          { label: 'Status', render: (u) => (u.is_active ? <Tag color="green">Active</Tag> : <Tag>Inactive</Tag>) },
+          { label: t('usr.col.name'), render: (u) => u.full_name },
+          { label: t('usr.col.email'), render: (u) => u.email },
+          { label: t('usr.col.role'), render: (u) => role(u.role) },
+          { label: t('usr.col.branches'), render: (u) => (u.all_branches ? t('usr.allBranches') : u.branches.map((b) => b.name).join(', ') || '—') },
+          { label: t('usr.col.status'), render: (u) => pill(u.is_active) },
         ]}
         columns={[
-          { title: 'Name', dataIndex: 'full_name' },
-          { title: 'Email', dataIndex: 'email' },
-          { title: 'Role', dataIndex: 'role', render: (r: User['role']) => ROLE_LABEL[r] },
-          { title: 'Branches', render: (_, u) => (u.all_branches ? 'All' : u.branches.map((b) => b.name).join(', ') || '—') },
-          { title: 'Last sign-in', dataIndex: 'last_login_at', render: when },
-          { title: '', render: (_, u) => (u.is_active ? <Tag color="green">Active</Tag> : <Tag>Inactive</Tag>) },
+          { title: t('usr.col.name'), dataIndex: 'full_name' },
+          { title: t('usr.col.email'), dataIndex: 'email' },
+          { title: t('usr.col.role'), dataIndex: 'role', render: (r: User['role']) => role(r) },
+          { title: t('usr.col.branches'), render: (_, u) => (u.all_branches ? t('usr.allBranches') : u.branches.map((b) => b.name).join(', ') || '—') },
+          { title: t('usr.col.last'), dataIndex: 'last_login_at', render: when },
+          { title: t('usr.col.status'), render: (_, u) => pill(u.is_active) },
         ]} />
       <Modal open={open} title="New user" okText="Create" onCancel={() => setOpen(false)}
         confirmLoading={create.isPending} onOk={() => form.submit()}>

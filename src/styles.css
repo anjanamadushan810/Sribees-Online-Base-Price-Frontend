@@ -252,3 +252,5 @@ tr.total td { background: var(--sb-primary-soft); }
 .sup-facts dd { margin: 0; font-weight: 600; font-size: 16px; }
 
 .login-head { display: flex; align-items: center; gap: 12px; }
+
+.spark-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }

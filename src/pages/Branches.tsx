@@ -1,17 +1,19 @@
 import { PlusOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { App, Button, Form, Input, Modal, Space, Tag } from 'antd'
+import { App, Button, Form, Input, Modal, Space } from 'antd'
 import { useState } from 'react'
 import { api, errorMessage } from '../api/client'
 import type { Branch } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import PageHeader from '../components/PageHeader'
 import { SyncOnlineButton } from '../components/SyncOnline'
-import { EmptyState } from '../components/ui'
+import { EmptyState, StatusPill } from '../components/ui'
+import { useT } from '../i18n'
 import { ResponsiveTable } from '../components/ui/ResponsiveTable'
 
 export default function Branches() {
   const { can } = useAuth()
+  const { t } = useT()
   const { message } = App.useApp()
   const qc = useQueryClient()
   const [open, setOpen] = useState(false)
@@ -22,25 +24,26 @@ export default function Branches() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['branches'] }); setOpen(false); form.resetFields() },
     onError: (e) => message.error(errorMessage(e)),
   })
+  const pill = (on: boolean) => <StatusPill tone={on ? 'success' : 'neutral'}>{on ? t('sup.active') : t('sup.inactive')}</StatusPill>
   return (
     <>
-      <PageHeader title="Branches" subtitle="Where supplier orders are delivered"
+      <PageHeader title={t('br.title')} subtitle={t('br.subtitle')}
         extra={<Space wrap>
           <SyncOnlineButton type="primary" />
-          {can('branches.write') && <Button icon={<PlusOutlined />} onClick={() => setOpen(true)}>New branch by hand</Button>}
+          {can('branches.write') && <Button icon={<PlusOutlined />} onClick={() => setOpen(true)}>{t('br.new')}</Button>}
         </Space>} />
       <ResponsiveTable rowKey="branch_id" loading={rows.isLoading} dataSource={rows.data} pagination={false}
-        locale={{ emptyText: <EmptyState title="No branches yet. Press “Sync from Online” to bring in SRIBEESonline's branches." /> }}
+        locale={{ emptyText: <EmptyState title={t('br.empty')} /> }}
         cardFields={[
-          { label: 'Name', render: (b) => <>{b.name} <span className="muted">{b.code}</span></> },
-          { label: 'Status', render: (b) => (b.is_active ? <Tag color="green">Active</Tag> : <Tag>Inactive</Tag>) },
-          { label: 'Online branch id', render: (b) => b.online_branch_id ?? '—' },
+          { label: t('br.col.name'), render: (b) => <>{b.name} <span className="muted">{b.code}</span></> },
+          { label: t('br.col.status'), render: (b) => pill(b.is_active) },
+          { label: t('br.col.online'), render: (b) => b.online_branch_id ?? '—' },
         ]}
         columns={[
-          { title: 'Code', dataIndex: 'code' },
-          { title: 'Name', dataIndex: 'name' },
-          { title: 'Online branch id', dataIndex: 'online_branch_id', render: (v) => v ?? '—' },
-          { title: '', render: (_, b) => (b.is_active ? <Tag color="green">Active</Tag> : <Tag>Inactive</Tag>) },
+          { title: t('br.col.code'), dataIndex: 'code' },
+          { title: t('br.col.name'), dataIndex: 'name' },
+          { title: t('br.col.online'), dataIndex: 'online_branch_id', render: (v) => v ?? '—' },
+          { title: t('br.col.status'), render: (_, b) => pill(b.is_active) },
         ]} />
       <Modal open={open} title="New branch" okText="Create" onCancel={() => setOpen(false)}
         confirmLoading={create.isPending} onOk={() => form.submit()}>
