@@ -41,6 +41,8 @@ export interface Step {
 export interface SupplierUser {
   supplier_user_id: string
   phone: string
+  email: string | null
+  must_change_password: boolean
   full_name: string
   language: 'si' | 'en'
   is_active: boolean

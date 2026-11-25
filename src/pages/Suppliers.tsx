@@ -7,7 +7,7 @@ import { api, errorMessage } from '../api/client'
 import type { Supplier } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import PageHeader from '../components/PageHeader'
-import { BankFields, DetailFields, clean } from './SupplierFields'
+import { AppLoginFields, BankFields, DetailFields, clean } from './SupplierFields'
 
 export default function Suppliers() {
   const { can } = useAuth()
@@ -59,6 +59,7 @@ export default function Suppliers() {
           <Alert type="info" showIcon style={{ marginBottom: 16 }}
             title="The supplier code is given automatically. These details go to Finance, so they are typed only here." />
           <DetailFields withName />
+          <AppLoginFields />
           {can('suppliers.bank') && (
             <>
               <Typography.Title level={5}>Bank details</Typography.Title>
