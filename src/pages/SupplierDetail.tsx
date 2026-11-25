@@ -225,6 +225,7 @@ function ImportPanel({ supplierId }: { supplierId: string }) {
 
 function PhonesPanel({ supplier }: { supplier: Supplier }) {
   const { can } = useAuth()
+  const { t } = useT()
   const { message } = App.useApp()
   const qc = useQueryClient()
   const [open, setOpen] = useState(false)
@@ -244,7 +245,7 @@ function PhonesPanel({ supplier }: { supplier: Supplier }) {
       api.post(`/suppliers/${supplier.supplier_id}/users/${pwUser!.supplier_user_id}/password`, v),
     onSuccess: () => {
       done(); setPwUser(null); pwForm.resetFields()
-      message.success('Saved. Tell the supplier the new password: they change it at the next sign-in.')
+      message.success(t('sd.ph.pwSaved'))
     },
     onError: (e) => message.error(errorMessage(e)),
   })
@@ -257,45 +258,45 @@ function PhonesPanel({ supplier }: { supplier: Supplier }) {
   return (
     <>
       <Alert type="info" showIcon style={{ marginBottom: 12 }}
-        message="These people can sign in to the supplier app: with an SMS code to the phone, and with email + password when a login is set. Turning one off signs it out at once." />
+        message={t('sd.ph.info')} />
       <Table rowKey="supplier_user_id" dataSource={supplier.users} pagination={false}
-        locale={{ emptyText: <Empty description="No phones yet" /> }}
+        locale={{ emptyText: <Empty description={t('sd.ph.none')} /> }}
         columns={[
-          { title: 'Phone', dataIndex: 'phone' },
-          { title: 'Name', dataIndex: 'full_name' },
-          { title: 'Login email', dataIndex: 'email', render: (v: string | null, u: SupplierUser) =>
-            v ? <>{v} {u.must_change_password && <Tag color="orange">Temporary password</Tag>}</> : '—' },
-          { title: 'Language', dataIndex: 'language', render: (v) => (v === 'si' ? 'සිංහල' : 'English') },
-          { title: 'Last sign-in', dataIndex: 'last_login_at', render: when },
-          { title: 'Active', render: (_, u) => (
+          { title: t('sd.phone'), dataIndex: 'phone' },
+          { title: t('sd.name'), dataIndex: 'full_name' },
+          { title: t('sd.ph.login'), dataIndex: 'email', render: (v: string | null, u: SupplierUser) =>
+            v ? <>{v} {u.must_change_password && <Tag color="orange">{t('sd.ph.temp')}</Tag>}</> : '—' },
+          { title: t('sd.ph.lang'), dataIndex: 'language', render: (v) => (v === 'si' ? 'සිංහල' : 'English') },
+          { title: t('sd.ph.last'), dataIndex: 'last_login_at', render: when },
+          { title: t('sd.ph.active'), render: (_, u) => (
             <Switch checked={u.is_active} disabled={!can('suppliers.write')} loading={toggle.isPending}
               onChange={() => toggle.mutate(u)} />
           ) },
           { title: '', render: (_, u: SupplierUser) => can('suppliers.write') && u.email && (
-            <Button size="small" onClick={() => setPwUser(u)}>Set new password</Button>
+            <Button size="small" onClick={() => setPwUser(u)}>{t('sd.ph.setPw')}</Button>
           ) },
         ]} />
-      {can('suppliers.write') && <Button style={{ marginTop: 12 }} onClick={() => setOpen(true)}>Add phone</Button>}
-      <Modal open={open} title="Add app phone" okText="Add" onCancel={() => setOpen(false)}
+      {can('suppliers.write') && <Button style={{ marginTop: 12 }} onClick={() => setOpen(true)}>{t('sd.ph.addBtn')}</Button>}
+      <Modal open={open} title={t('sd.ph.addTitle')} okText={t('sd.add')} onCancel={() => setOpen(false)}
         confirmLoading={add.isPending} onOk={() => form.submit()}>
         <Form form={form} layout="vertical" initialValues={{ language: 'si' }} onFinish={(v) => add.mutate(v)}>
-          <Form.Item name="phone" label="Mobile number" rules={[{ required: true }]}>
+          <Form.Item name="phone" label={t('sd.ph.mobile')} rules={[{ required: true }]}>
             <Input placeholder="07X XXX XXXX" />
           </Form.Item>
-          <Form.Item name="full_name" label="Name" rules={[{ required: true, min: 2 }]}><Input /></Form.Item>
-          <Form.Item name="language" label="App and SMS language">
+          <Form.Item name="full_name" label={t('sd.name')} rules={[{ required: true, min: 2 }]}><Input /></Form.Item>
+          <Form.Item name="language" label={t('sd.appLang')}>
             <Select options={[{ value: 'si', label: 'සිංහල' }, { value: 'en', label: 'English' }]} />
           </Form.Item>
-          <Form.Item name="email" label="Login email (optional)" rules={[{ type: 'email' }]}><Input /></Form.Item>
-          <PasswordBox name="password" label="Temporary password (with an email)" />
+          <Form.Item name="email" label={t('sd.ph.emailOpt')} rules={[{ type: 'email' }]}><Input /></Form.Item>
+          <PasswordBox name="password" label={t('sd.ph.tempWith')} />
         </Form>
       </Modal>
-      <Modal open={!!pwUser} title={`New password for ${pwUser?.full_name ?? ''}`} okText="Save"
+      <Modal open={!!pwUser} title={fmt(t('sd.ph.newPwFor'), { name: pwUser?.full_name ?? '' })} okText={t('sd.save')}
         onCancel={() => setPwUser(null)} confirmLoading={setPw.isPending} onOk={() => pwForm.submit()}>
         <Form form={pwForm} layout="vertical" onFinish={(v) => setPw.mutate(v)}>
           <Alert type="warning" showIcon style={{ marginBottom: 12 }}
-            message="Signs the supplier out everywhere. They must change this password at the next sign-in." />
-          <PasswordBox name="password" label="Temporary password" required />
+            message={t('sd.ph.signsOut')} />
+          <PasswordBox name="password" label={t('sd.tempPw')} required />
         </Form>
       </Modal>
     </>
@@ -304,6 +305,7 @@ function PhonesPanel({ supplier }: { supplier: Supplier }) {
 
 function MessagePanel({ supplierId }: { supplierId: string }) {
   const { message } = App.useApp()
+  const { t } = useT()
   const msg = useQuery({
     queryKey: ['message', supplierId],
     queryFn: async () => (await api.get<{ text: string }>(`/suppliers/${supplierId}/catalog/message`)).data.text,
@@ -312,9 +314,9 @@ function MessagePanel({ supplierId }: { supplierId: string }) {
     <Card loading={msg.isLoading} extra={
       <Button icon={<CopyOutlined />} onClick={() => {
         void navigator.clipboard.writeText(msg.data ?? '')
-        message.success('Copied')
-      }}>Copy</Button>}>
-      <Descriptions size="small" items={[{ key: 'n', label: 'Characters', children: msg.data?.length ?? 0 }]} />
+        message.success(t('sd.msg.copied'))
+      }}>{t('sd.msg.copy')}</Button>}>
+      <Descriptions size="small" items={[{ key: 'n', label: t('sd.msg.chars'), children: msg.data?.length ?? 0 }]} />
       <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', marginTop: 12 }}>{msg.data}</pre>
     </Card>
   )
