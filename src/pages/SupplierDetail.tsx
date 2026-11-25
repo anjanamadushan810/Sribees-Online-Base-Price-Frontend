@@ -14,6 +14,7 @@ import { useAuth } from '../auth/AuthContext'
 import PageHeader from '../components/PageHeader'
 import MatchingPanel from './MatchingPanel'
 import SupplierDetails from './SupplierDetails'
+import { PasswordBox, clean } from './SupplierFields'
 
 export default function SupplierDetail() {
   const { id = '' } = useParams()
@@ -173,9 +174,21 @@ function PhonesPanel({ supplier }: { supplier: Supplier }) {
   const [form] = Form.useForm()
   const done = () => qc.invalidateQueries({ queryKey: ['supplier', supplier.supplier_id] })
   const add = useMutation({
-    mutationFn: async (v: { phone: string; full_name: string; language: string }) =>
-      api.post(`/suppliers/${supplier.supplier_id}/users`, v),
+    mutationFn: async (v: { phone: string; full_name: string; language: string;
+      email?: string; password?: string }) =>
+      api.post(`/suppliers/${supplier.supplier_id}/users`, clean(v)),
     onSuccess: () => { done(); setOpen(false); form.resetFields() },
+    onError: (e) => message.error(errorMessage(e)),
+  })
+  const [pwUser, setPwUser] = useState<SupplierUser | null>(null)
+  const [pwForm] = Form.useForm()
+  const setPw = useMutation({
+    mutationFn: async (v: { password: string }) =>
+      api.post(`/suppliers/${supplier.supplier_id}/users/${pwUser!.supplier_user_id}/password`, v),
+    onSuccess: () => {
+      done(); setPwUser(null); pwForm.resetFields()
+      message.success('Saved. Tell the supplier the new password: they change it at the next sign-in.')
+    },
     onError: (e) => message.error(errorMessage(e)),
   })
   const toggle = useMutation({
@@ -187,17 +200,22 @@ function PhonesPanel({ supplier }: { supplier: Supplier }) {
   return (
     <>
       <Alert type="info" showIcon style={{ marginBottom: 12 }}
-        message="These numbers can sign in to the supplier app with an SMS code. Turning one off signs it out at once." />
+        message="These people can sign in to the supplier app: with an SMS code to the phone, and with email + password when a login is set. Turning one off signs it out at once." />
       <Table rowKey="supplier_user_id" dataSource={supplier.users} pagination={false}
         locale={{ emptyText: <Empty description="No phones yet" /> }}
         columns={[
           { title: 'Phone', dataIndex: 'phone' },
           { title: 'Name', dataIndex: 'full_name' },
+          { title: 'Login email', dataIndex: 'email', render: (v: string | null, u: SupplierUser) =>
+            v ? <>{v} {u.must_change_password && <Tag color="orange">Temporary password</Tag>}</> : '—' },
           { title: 'Language', dataIndex: 'language', render: (v) => (v === 'si' ? 'සිංහල' : 'English') },
           { title: 'Last sign-in', dataIndex: 'last_login_at', render: when },
           { title: 'Active', render: (_, u) => (
             <Switch checked={u.is_active} disabled={!can('suppliers.write')} loading={toggle.isPending}
               onChange={() => toggle.mutate(u)} />
+          ) },
+          { title: '', render: (_, u: SupplierUser) => can('suppliers.write') && u.email && (
+            <Button size="small" onClick={() => setPwUser(u)}>Set new password</Button>
           ) },
         ]} />
       {can('suppliers.write') && <Button style={{ marginTop: 12 }} onClick={() => setOpen(true)}>Add phone</Button>}
@@ -211,6 +229,16 @@ function PhonesPanel({ supplier }: { supplier: Supplier }) {
           <Form.Item name="language" label="App and SMS language">
             <Select options={[{ value: 'si', label: 'සිංහල' }, { value: 'en', label: 'English' }]} />
           </Form.Item>
+          <Form.Item name="email" label="Login email (optional)" rules={[{ type: 'email' }]}><Input /></Form.Item>
+          <PasswordBox name="password" label="Temporary password (with an email)" />
+        </Form>
+      </Modal>
+      <Modal open={!!pwUser} title={`New password for ${pwUser?.full_name ?? ''}`} okText="Save"
+        onCancel={() => setPwUser(null)} confirmLoading={setPw.isPending} onOk={() => pwForm.submit()}>
+        <Form form={pwForm} layout="vertical" onFinish={(v) => setPw.mutate(v)}>
+          <Alert type="warning" showIcon style={{ marginBottom: 12 }}
+            message="Signs the supplier out everywhere. They must change this password at the next sign-in." />
+          <PasswordBox name="password" label="Temporary password" required />
         </Form>
       </Modal>
     </>
