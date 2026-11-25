@@ -1,67 +1,155 @@
 import {
+  BulbOutlined,
   DollarOutlined,
   LinkOutlined,
   LogoutOutlined,
+  MoonOutlined,
   PauseCircleOutlined,
   ShopOutlined,
   ShoppingCartOutlined,
+  SunOutlined,
   TeamOutlined,
   UserOutlined,
+  MoreOutlined,
 } from '@ant-design/icons'
-import { Avatar, Button, Dropdown, Layout, Menu, Typography } from 'antd'
+import type { InputRef } from 'antd'
+import { Avatar, Button, Drawer, Dropdown, Grid, Layout, Menu, Segmented, Tooltip } from 'antd'
+import { Suspense, useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { ROLE_LABEL } from '../api/lookups'
 import { useAuth } from '../auth/AuthContext'
+import { useT } from '../i18n'
+import type { TextKey } from '../i18n/en'
+import { useTheme } from '../theme/ThemeContext'
+import GlobalSearch from './GlobalSearch'
+import { PageSkeleton } from './ui'
+import { useShortcuts } from './useShortcuts'
 
-interface NavItem { key: string; label: string; icon: React.ReactNode; permission?: string }
+interface NavItem { key: string; label: TextKey; icon: ReactNode; permission: string; main?: boolean }
+interface NavGroup { label: TextKey; items: NavItem[] }
 
-const NAV: NavItem[] = [
-  { key: '/suppliers', label: 'Suppliers', icon: <ShopOutlined />, permission: 'suppliers.read' },
-  { key: '/matching', label: 'Matching', icon: <LinkOutlined />, permission: 'matches.read' },
-  { key: '/orders', label: 'Orders', icon: <ShoppingCartOutlined />, permission: 'orders.read' },
-  { key: '/base-prices', label: 'Base prices', icon: <DollarOutlined />, permission: 'base_prices.read' },
-  { key: '/held', label: 'Held prices', icon: <PauseCircleOutlined />, permission: 'suppliers.read' },
-  { key: '/branches', label: 'Branches', icon: <TeamOutlined />, permission: 'branches.read' },
-  { key: '/users', label: 'Users', icon: <UserOutlined />, permission: 'users.read' },
+const GROUPS: NavGroup[] = [
+  { label: 'nav.group.buy', items: [
+    { key: '/orders', label: 'nav.orders', icon: <ShoppingCartOutlined />, permission: 'orders.read', main: true },
+    { key: '/suppliers', label: 'nav.suppliers', icon: <ShopOutlined />, permission: 'suppliers.read', main: true },
+  ] },
+  { label: 'nav.group.prices', items: [
+    { key: '/matching', label: 'nav.matching', icon: <LinkOutlined />, permission: 'matches.read', main: true },
+    { key: '/base-prices', label: 'nav.basePrices', icon: <DollarOutlined />, permission: 'base_prices.read', main: true },
+    { key: '/held', label: 'nav.held', icon: <PauseCircleOutlined />, permission: 'suppliers.read' },
+  ] },
+  { label: 'nav.group.setup', items: [
+    { key: '/branches', label: 'nav.branches', icon: <TeamOutlined />, permission: 'branches.read' },
+    { key: '/users', label: 'nav.users', icon: <UserOutlined />, permission: 'users.read' },
+  ] },
 ]
+
+const THEME_ICON = { system: <BulbOutlined />, light: <SunOutlined />, dark: <MoonOutlined /> }
+const THEME_TEXT = { system: 'top.theme.system', light: 'top.theme.light', dark: 'top.theme.dark' } as const
 
 export default function AppLayout() {
   const { me, can, logout } = useAuth()
+  const { t, lang, setLang } = useT()
+  const { preference, cycle } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
-  const selected = NAV.find((n) => location.pathname.startsWith(n.key))?.key
+  const screens = Grid.useBreakpoint()
+  const phone = screens.md === false
+  const [more, setMore] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
+  const searchRef = useRef<InputRef>(null)
+
+  const groups = useMemo(
+    () => GROUPS.map((g) => ({ ...g, items: g.items.filter((i) => can(i.permission)) }))
+      .filter((g) => g.items.length),
+    [can],
+  )
+  const flat = groups.flatMap((g) => g.items)
+  const selected = flat.find((n) => location.pathname.startsWith(n.key))?.key
+  const focusSearch = useCallback(() => searchRef.current?.focus(), [])
+  const allowed = useMemo(() => ({ o: can('orders.read'), s: can('suppliers.read'), m: can('matches.read') }), [can])
+  useShortcuts(focusSearch, allowed)
+
+  const go = (key: string) => { setMore(false); navigate(key) }
+
+  const menuItems = groups.map((g) => ({
+    type: 'group' as const, key: g.label, label: collapsed ? null : t(g.label),
+    children: g.items.map((i) => ({ key: i.key, icon: i.icon, label: t(i.label) })),
+  }))
+
+  const userMenu = (
+    <Dropdown placement="bottomRight" menu={{ items: [
+      { key: 'out', icon: <LogoutOutlined />, label: t('top.signOut'), onClick: () => void logout() },
+    ] }}>
+      <Button type="text" className="user-chip" aria-label={me?.full_name}>
+        <Avatar size="small" style={{ background: 'var(--sb-primary)', color: 'var(--sb-primary-text)' }}>
+          {me?.full_name.slice(0, 1).toUpperCase()}
+        </Avatar>
+        <span className="user-label">{me?.full_name}</span>
+        {me && <span className="role-chip">{t(`role.${me.role}` as TextKey)}</span>}
+      </Button>
+    </Dropdown>
+  )
+
+  const tools = (
+    <>
+      <Segmented size="small" value={lang} onChange={(v) => setLang(v as 'en' | 'si')}
+        aria-label={t('top.language')}
+        options={[{ value: 'en', label: 'EN' }, { value: 'si', label: 'සිං' }]} />
+      <Tooltip title={t(THEME_TEXT[preference])}>
+        <Button type="text" icon={THEME_ICON[preference]} onClick={cycle}
+          aria-label={t(THEME_TEXT[preference])} />
+      </Tooltip>
+      {userMenu}
+    </>
+  )
+
+  const brand = (
+    <div className="brand">
+      <div className="brand-mark" aria-hidden>S</div>
+      {!collapsed && <div><div className="brand-name">Sribees</div><div className="brand-sub">Supply</div></div>}
+    </div>
+  )
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Layout.Sider breakpoint="lg" collapsedWidth={0} theme="light" width={220}
-        style={{ borderRight: '1px solid #f0f0f0' }}>
-        <div style={{ padding: '18px 20px', fontWeight: 700, fontSize: 17 }}>Sribees Supply</div>
-        <Menu mode="inline" selectedKeys={selected ? [selected] : []}
-          items={NAV.filter((n) => !n.permission || can(n.permission)).map((n) => ({
-            key: n.key, label: n.label, icon: n.icon,
-          }))}
-          onClick={(e) => navigate(e.key)} />
-      </Layout.Sider>
+    <Layout style={{ minHeight: '100vh' }} className={phone ? 'has-bottom-nav' : undefined}>
+      <a className="skip-link" href="#main">{t('common.skipToContent')}</a>
+      {!phone && (
+        <Layout.Sider theme="light" width={228} collapsible collapsed={collapsed}
+          onCollapse={setCollapsed} style={{ borderRight: '1px solid var(--sb-border)' }}>
+          {brand}
+          <Menu mode="inline" selectedKeys={selected ? [selected] : []} items={menuItems}
+            onClick={(e) => go(e.key)} style={{ borderInlineEnd: 0 }} />
+        </Layout.Sider>
+      )}
       <Layout>
-        <Layout.Header style={{ background: '#fff', display: 'flex', justifyContent: 'flex-end',
-          alignItems: 'center', padding: '0 20px', borderBottom: '1px solid #f0f0f0' }}>
-          <Dropdown menu={{ items: [{ key: 'out', icon: <LogoutOutlined />, label: 'Sign out',
-            onClick: () => void logout() }] }}>
-            <Button type="text">
-              <Avatar size="small" style={{ background: '#c77700' }}>
-                {me?.full_name.slice(0, 1).toUpperCase()}
-              </Avatar>
-              <span style={{ marginLeft: 8 }}>{me?.full_name}</span>
-              <Typography.Text type="secondary" style={{ marginLeft: 8 }}>
-                {me ? ROLE_LABEL[me.role] : ''}
-              </Typography.Text>
-            </Button>
-          </Dropdown>
+        <Layout.Header className="topbar" style={{ height: 56, lineHeight: 'normal', paddingInline: 16 }}>
+          {phone && <div className="brand-mark" aria-hidden>S</div>}
+          <div className="grow"><GlobalSearch ref={searchRef} /></div>
+          {tools}
         </Layout.Header>
-        <Layout.Content style={{ padding: 20 }}>
-          <Outlet />
+        <Layout.Content id="main" tabIndex={-1} style={{ outline: 'none' }}>
+          <div className="content"><Suspense fallback={<PageSkeleton />}><Outlet /></Suspense></div>
         </Layout.Content>
       </Layout>
+
+      {phone && (
+        <nav className="bottom-nav" aria-label="Main">
+          {flat.filter((i) => i.main).map((i) => (
+            <button key={i.key} type="button" onClick={() => go(i.key)}
+              aria-current={selected === i.key ? 'page' : undefined}>
+              {i.icon}<span>{t(i.label)}</span>
+            </button>
+          ))}
+          <button type="button" onClick={() => setMore(true)}>
+            <MoreOutlined /><span>{t('nav.more')}</span>
+          </button>
+        </nav>
+      )}
+      <Drawer open={more} onClose={() => setMore(false)} placement="bottom" height="auto"
+        title={t('nav.more')}>
+        <Menu mode="inline" selectedKeys={selected ? [selected] : []} items={menuItems}
+          onClick={(e) => go(e.key)} style={{ borderInlineEnd: 0 }} />
+      </Drawer>
     </Layout>
   )
 }
