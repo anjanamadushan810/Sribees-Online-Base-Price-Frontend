@@ -44,6 +44,37 @@ const FIXTURES: Record<string, unknown> = {
       unit_price: '348.50', mrp: '420.00', recorded_at: '2026-11-18T10:00:00Z', voided_at: null,
       product_name: 'Anchor milk powder 400g', supplier_name: 'Lanka Distributors' },
   ],
+  '/dashboard/today': {
+    approval_mode: 'local', open_total: 17,
+    rows: [
+      { key: 'approve', count: 2, route: '/orders?status=submitted' },
+      { key: 'unopened', count: 1, route: '/orders?status=approved' },
+      { key: 'declined', count: 1, route: '/orders?status=declined' },
+      { key: 'drafts', count: 3, route: '/orders?status=draft' },
+      { key: 'to_match', count: 89, route: '/matching' },
+      { key: 'held', count: 6, route: '/held' },
+    ],
+  },
+  '/dashboard/orders-summary': {
+    stages: { draft: 3, waiting_approval: 2, sent: 1, opened: 2, accepted: 5, declined: 1,
+      rejected: 0, received: 4 },
+    week_orders: 6, week_value: '412350.00',
+  },
+  '/dashboard/price-changes': {
+    days: 7, increases: 2, decreases: 1,
+    items: [
+      { offer_id: 'f1', supplier_id: 's1', supplier_name: 'Nishi Super Palace', heading: 'Baby Cheramy soap', label: '75g', old_price: '125.00', new_price: '129.00', changed_at: '2026-11-24T07:00:00Z' },
+      { offer_id: 'f2', supplier_id: 's2', supplier_name: 'Lanka Distributors', heading: 'Anchor milk powder', label: '400g', old_price: '352.00', new_price: '348.50', changed_at: '2026-11-23T07:00:00Z' },
+      { offer_id: 'f3', supplier_id: 's1', supplier_name: 'Nishi Super Palace', heading: 'Coca-Cola', label: '1.5L', old_price: '369.00', new_price: '380.00', changed_at: '2026-11-22T07:00:00Z' },
+    ],
+  },
+  '/dashboard/base-price-insight': {
+    products_compared: 12, can_save_count: 2, never_ordered_count: 31, never_ordered: [],
+    can_save: [
+      { online_product_id: 'p1', product_name: 'Baby Cheramy soap 75g', base_price: '125.00', base_supplier: 'Nishi Super Palace', best_price: '110.00', best_supplier: 'Lanka Distributors', saving: '15.00', saving_pct: 12.0, last_paid_at: '2026-11-20T10:00:00Z' },
+      { online_product_id: 'p2', product_name: 'Anchor milk powder 400g', base_price: '352.00', base_supplier: 'Lanka Distributors', best_price: '340.00', best_supplier: 'Ceylon Foods (Pvt) Ltd', saving: '12.00', saving_pct: 3.4, last_paid_at: '2026-11-18T10:00:00Z' },
+    ],
+  },
   '/held-offers': [],
   '/branches': [{ branch_id: 'b1', code: 'MTG', name: 'Matugama', online_branch_id: 'x', is_active: true }],
   '/users': [ME],
@@ -63,7 +94,7 @@ async function fakeApi(page: Page, signedIn: boolean) {
 }
 
 const SCREENS = [
-  ['suppliers', '/suppliers'], ['orders', '/orders'], ['base-prices', '/base-prices'],
+  ['home', '/'], ['suppliers', '/suppliers'], ['orders', '/orders'], ['base-prices', '/base-prices'],
   ['held', '/held'], ['branches', '/branches'], ['users', '/users'],
 ] as const
 const SIZES = [['desktop', 1440, 900], ['phone', 390, 844]] as const

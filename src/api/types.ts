@@ -263,3 +263,64 @@ export interface HeldOffer {
   held_reason: string
   updated_at: string
 }
+
+// ---- dashboard (Home page)
+export type TodayKey = 'approve' | 'unopened' | 'declined' | 'drafts' | 'to_match' | 'held'
+
+export interface TodayRow {
+  key: TodayKey
+  count: number
+  route: string
+  in_finance?: boolean
+}
+
+export interface TodayOut {
+  approval_mode: 'local' | 'finance'
+  rows: TodayRow[]
+  open_total: number
+}
+
+export interface OrdersSummary {
+  stages: Record<'draft' | 'waiting_approval' | 'sent' | 'opened' | 'accepted' | 'declined'
+    | 'rejected' | 'received', number>
+  week_orders: number
+  week_value: string
+}
+
+export interface PriceChangeItem {
+  offer_id: string
+  supplier_id: string
+  supplier_name: string
+  heading: string
+  label: string
+  old_price: string
+  new_price: string
+  changed_at: string
+}
+
+export interface PriceChanges {
+  days: number
+  items: PriceChangeItem[]
+  increases: number
+  decreases: number
+}
+
+export interface InsightItem {
+  online_product_id: string
+  product_name: string
+  base_price: string
+  base_supplier: string
+  best_price: string
+  best_supplier: string
+  saving: string
+  saving_pct: number
+  last_paid_at: string
+}
+
+export interface BasePriceInsight {
+  products_compared: number
+  can_save: InsightItem[]
+  can_save_count: number
+  never_ordered_count: number
+  never_ordered: { online_product_id: string; product_name: string }[]
+}

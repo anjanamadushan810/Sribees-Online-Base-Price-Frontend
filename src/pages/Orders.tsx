@@ -2,7 +2,7 @@ import { PlusOutlined } from '@ant-design/icons'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { App, Button, Form, Input, Modal, Select, Space, Tag } from 'antd'
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api, errorMessage } from '../api/client'
 import { ORDER_STATUS, when } from '../api/lookups'
 import { formatMoney } from '../api/money'
@@ -15,7 +15,9 @@ export default function Orders() {
   const { can } = useAuth()
   const navigate = useNavigate()
   const { message } = App.useApp()
-  const [status, setStatus] = useState<OrderStatus>()
+  const [params, setParams] = useSearchParams()
+  const status = (params.get('status') ?? undefined) as OrderStatus | undefined
+  const setStatus = (v?: OrderStatus) => setParams(v ? { status: v } : {}, { replace: true })
   const [open, setOpen] = useState(false)
   const [form] = Form.useForm()
   const orders = useQuery({
