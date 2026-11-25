@@ -209,3 +209,38 @@ tr.total td { background: var(--sb-primary-soft); }
 .conf-neutral { background: var(--sb-muted); }
 .conf-text { font-size: 13px; color: var(--sb-muted); white-space: nowrap; }
 .match-keys { margin-top: 10px; color: var(--sb-muted); font-size: 12px; }
+
+/* ---- orders: filters, the road an order takes, the action bar, the printed sheet ---- */
+.ord-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+.ord-summary { color: var(--sb-muted); font-size: 13px; margin-bottom: 8px; }
+.ord-timeline {
+  list-style: none; margin: 0 0 16px; padding: 14px 16px; display: flex; gap: 4px; overflow-x: auto;
+  background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius-card);
+}
+.ord-step { flex: 1 1 0; min-width: 110px; display: flex; flex-direction: column; gap: 2px; position: relative; padding-top: 22px; }
+.ord-step::before { content: ''; position: absolute; top: 9px; left: 22px; right: -4px; height: 2px; background: var(--sb-border); }
+.ord-step:last-child::before { display: none; }
+.ord-dot {
+  position: absolute; top: 0; left: 0; width: 20px; height: 20px; border-radius: 50%; display: grid;
+  place-items: center; font-size: 11px; background: var(--sb-surface); border: 2px solid var(--sb-border); color: var(--sb-primary-text);
+}
+.ord-done .ord-dot { background: var(--sb-success); border-color: var(--sb-success); }
+.ord-done::before { background: var(--sb-success); }
+.ord-current .ord-dot { border-color: var(--sb-primary); box-shadow: 0 0 0 3px var(--sb-primary-soft); }
+.ord-bad .ord-dot { background: var(--sb-danger); border-color: var(--sb-danger); }
+.ord-step-name { font-weight: 600; font-size: 13px; }
+.ord-todo .ord-step-name { color: var(--sb-muted); font-weight: 500; }
+.ord-step-at { color: var(--sb-muted); font-size: 12px; }
+.ord-actions {
+  position: sticky; bottom: 0; z-index: 5; margin: 16px -4px 0; padding: 12px 16px; display: flex; gap: 16px;
+  align-items: center; justify-content: space-between; flex-wrap: wrap;
+  background: var(--sb-surface); border: 1px solid var(--sb-border); border-radius: var(--sb-radius-card);
+}
+.ord-actions-text { flex: 1 1 260px; color: var(--sb-muted); font-size: 13px; }
+.ord-actions-buttons { display: flex; gap: 8px; }
+@media (max-width: 767px) { .ord-actions { bottom: 64px; } .ord-step { min-width: 96px; } }
+@media print {
+  .no-print, .ant-layout-sider, .topbar, .bottom-nav, .skip-link { display: none !important; }
+  body { background: white; }
+  .ord-timeline { break-inside: avoid; }
+}

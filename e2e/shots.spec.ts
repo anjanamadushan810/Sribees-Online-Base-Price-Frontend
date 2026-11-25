@@ -62,6 +62,28 @@ const FIXTURES: Record<string, unknown> = {
         online_variant_id: null, name: 'Lanka white sugar 1kg', name_si: null, sku: 'SUG1',
         size: '1 kg', score: null } },
   ],
+  '/orders/o1': {
+    order_id: 'o1', order_no: 'SPO-000012', status: 'submitted', branch_name: 'Matugama', branch_id: 'b1',
+    supplier_id: 's1', supplier_name: 'Nishi Super Palace', goods_total: '87392.00', delivery_charge: null, total: '87392.00',
+    note: 'Deliver before noon', supplier_note: null, cancel_reason: null, cancel_note: null,
+    created_at: '2026-11-22T09:30:00Z', submitted_at: '2026-11-22T10:00:00Z', approved_at: null, answered_at: null, supplier_seen_at: null,
+    lines: [
+      { line_id: 'l1', offer_id: 'f1', online_product_id: 'p1', heading: 'Anchor Milk Powder', label: '400g', boxes: 4,
+        units_per_box: 24, units: 96, unit_price: '348.50', line_total: '33456.00' },
+      { line_id: 'l2', offer_id: 'f2', online_product_id: 'p2', heading: 'Baby Cheramy Soap', label: '75g', boxes: 6,
+        units_per_box: 72, units: 432, unit_price: '125.00', line_total: '54000.00' },
+    ] },
+  '/orders/o2': {
+    order_id: 'o2', order_no: 'SPO-000011', status: 'accepted', branch_name: 'Matugama', branch_id: 'b1',
+    supplier_id: 's1', supplier_name: 'Lanka Distributors', goods_total: '87392.00', delivery_charge: null, total: '87392.00',
+    note: 'Deliver before noon', supplier_note: null, cancel_reason: null, cancel_note: null,
+    created_at: '2026-11-22T09:30:00Z', submitted_at: '2026-11-22T10:00:00Z', approved_at: '2026-11-22T11:00:00Z', answered_at: '2026-11-23T05:20:00Z', supplier_seen_at: '2026-11-22T12:40:00Z',
+    lines: [
+      { line_id: 'l1', offer_id: 'f1', online_product_id: 'p1', heading: 'Anchor Milk Powder', label: '400g', boxes: 4,
+        units_per_box: 24, units: 96, unit_price: '348.50', line_total: '33456.00' },
+      { line_id: 'l2', offer_id: 'f2', online_product_id: 'p2', heading: 'Baby Cheramy Soap', label: '75g', boxes: 6,
+        units_per_box: 72, units: 432, unit_price: '125.00', line_total: '54000.00' },
+    ] },
   '/dashboard/today': {
     approval_mode: 'local', open_total: 17,
     rows: [
@@ -113,7 +135,7 @@ async function fakeApi(page: Page, signedIn: boolean) {
 
 const SCREENS = [
   ['home', '/'], ['suppliers', '/suppliers'], ['orders', '/orders'], ['base-prices', '/base-prices'],
-  ['held', '/held'], ['matching', '/matching'], ['branches', '/branches'], ['users', '/users'],
+  ['held', '/held'], ['matching', '/matching'], ['order-submitted', '/orders/o1'], ['order-accepted', '/orders/o2'], ['branches', '/branches'], ['users', '/users'],
 ] as const
 const SIZES = [['desktop', 1440, 900], ['phone', 390, 844]] as const
 const MODES = ['light', 'dark'] as const
