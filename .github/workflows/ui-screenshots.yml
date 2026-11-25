@@ -28,3 +28,9 @@ jobs:
           name: ui-screenshots
           path: shots/
           if-no-files-found: warn
+      # The same build the screenshots were taken from, so a deploy can use exactly what was looked at.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: dist/
+          if-no-files-found: error
