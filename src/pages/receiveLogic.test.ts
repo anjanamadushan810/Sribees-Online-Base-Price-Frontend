@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { goodsCents, problem, receiptLines, shortUnits, startEntry, type Entry, type FormLine } from './receiveLogic'
+import { extraLine, goodsCents, problem, receiptLines, shortUnits, startEntry, type Entry, type FormLine } from './receiveLogic'
 
 const line = (id: string, over: Partial<FormLine> = {}): FormLine => ({
   order_line_id: id, name: id, name_si: null, image_url: null, online_variant_id: `v-${id}`,
@@ -53,5 +53,16 @@ describe('receiving', () => {
     expect(problem(rice, entries({ units: 2 }), '')?.kind).toBe('weight')
     expect(problem(rice, entries({ units: 2, weight_kg: '50.2' }), '')).toBeNull()
     expect(problem(lines, entries({ units: 1 }), '-5')?.kind).toBe('transport')
+  })
+})
+
+describe('a product that came without being ordered', () => {
+  it('is sent by its pack size, never makes the order short, and keeps its bill price', () => {
+    const extra = extraLine({ online_variant_id: 'v9', name: 'Honey', variant: '500g', name_si: null,
+      image_url: null, weight_grams: 520, last_price: '450.00' })
+    const entries = { v9: { ...startEntry(extra), units: 3 } }
+    expect(receiptLines([extra], entries)).toMatchObject([
+      { order_line_id: null, online_variant_id: 'v9', units: 3, unit_price: '450.00', product_id: null }])
+    expect(shortUnits([extra], {})).toBe(0)
   })
 })

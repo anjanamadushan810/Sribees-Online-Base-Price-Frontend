@@ -456,6 +456,12 @@ export const en = {
   "qb.another": "Another quick buy",
   // receiving goods
   "rcv.title": "Receive goods",
+  "rcv.photo": "Photo of the bill",
+  "rcv.photoHint": "JPEG, PNG or WebP, up to 3 MB. Sent with the receipt.",
+  "rcv.photoBig": "The photo is larger than 3 MB; take it again at a lower size.",
+  "rcv.photoFailed": "The receipt is saved, but the bill photo was not:",
+  "rcv.addExtra": "Add a product that came without being ordered",
+  "rcv.addExtraHint": "Only products we already sell. A new product is added on SRIBEES Online by the super admin first.",
   "rcv.view": "Receipts and shop stock",
   "rcv.ordered": "Ordered {n} · order price Rs {price}",
   "rcv.shopStock": "In the shop now: {n}",

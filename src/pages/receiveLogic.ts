@@ -13,6 +13,20 @@ export interface FormLine {
   online_variant_id: string | null; pack_sizes: { online_variant_id: string; name: string }[]
   due_units: number; unit_price: string; mrp: string | null; by_weight: boolean
   unit_weight_grams: number | null; shop: Shop | null
+  /** came without being ordered (owner 2026-11-26): keyed by its pack size id */
+  extra?: boolean
+}
+
+/** A product we already sell that came without being ordered (only existing products:
+ *  the super admin adds new ones on Online). */
+export function extraLine(item: { online_variant_id: string; name: string; variant: string
+  name_si: string | null; image_url?: string | null; weight_grams: number | null; last_price?: string | null }): FormLine {
+  return {
+    order_line_id: item.online_variant_id, name: `${item.name} ${item.variant}`.trim(),
+    name_si: item.name_si, image_url: item.image_url ?? null, online_variant_id: item.online_variant_id,
+    pack_sizes: [], due_units: 1_000_000, unit_price: item.last_price ?? '', mrp: null,
+    by_weight: false, unit_weight_grams: item.weight_grams, shop: null, extra: true,
+  }
 }
 
 export interface ReceivingForm {
@@ -75,10 +89,12 @@ export function receiptLines(lines: FormLine[], entries: Record<string, Entry>) 
     // a new listed price alone must not leave the old selling price above it
     if (listed && !selling && e.selling_price.trim()) selling = e.selling_price.trim().replace(/,/g, '')
     return [{
-      order_line_id: line.order_line_id, units: e.units, free_units: e.free_units,
+      order_line_id: line.extra ? null : line.order_line_id,
+      online_variant_id: line.extra ? line.online_variant_id : null,
+      units: e.units, free_units: e.free_units,
       unit_price: e.unit_price.replace(/,/g, ''),
       weight_kg: line.by_weight ? e.weight_kg : null,
-      expiry_date: e.expiry, product_id: e.product_id, labels: labelNumbers(e.labels),
+      expiry_date: e.expiry, product_id: line.extra ? null : e.product_id, labels: labelNumbers(e.labels),
       listed_price: listed, selling_price: selling,
     }]
   })
@@ -86,7 +102,8 @@ export function receiptLines(lines: FormLine[], entries: Record<string, Entry>) 
 
 /** Units ordered and not coming: the order closes with them still missing. */
 export function shortUnits(lines: FormLine[], entries: Record<string, Entry>): number {
-  return lines.reduce((n, l) => n + Math.max(l.due_units - (entries[l.order_line_id]?.units ?? 0), 0), 0)
+  return lines.reduce((n, l) => l.extra ? n
+    : n + Math.max(l.due_units - (entries[l.order_line_id]?.units ?? 0), 0), 0)
 }
 
 export function goodsCents(lines: FormLine[], entries: Record<string, Entry>): number {

@@ -453,6 +453,12 @@ export const si: Record<TextKey, string> = {
   "qb.another": "තවත් ඉක්මන් මිලදී ගැනීමක්",
   // receiving goods
   "rcv.title": "බඩු ලැබීම",
+  "rcv.photo": "Bill එකේ photo එක",
+  "rcv.photoHint": "JPEG, PNG හෝ WebP, 3 MBට අඩු. ලැබීම එක්ක යනවා.",
+  "rcv.photoBig": "Photo එක 3 MBට වැඩියි; පොඩි size එකකින් ආයේ ගන්න.",
+  "rcv.photoFailed": "ලැබීම save වුණා, ඒත් bill photo එක ගියේ නෑ:",
+  "rcv.addExtra": "Order නොකර ආපු product එකක් එකතු කරන්න",
+  "rcv.addExtraHint": "අපි දැනටමත් විකුණන products විතරයි. අලුත් product එකක් නම් super admin මුලින් SRIBEES Online එකේ දානවා.",
   "rcv.view": "ලැබීම් සහ කඩේ තොග",
   "rcv.ordered": "ඇණවුම {n} · ඇණවුම් මිල රු. {price}",
   "rcv.shopStock": "දැනට කඩේ තොග: {n}",

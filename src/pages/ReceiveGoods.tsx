@@ -1,6 +1,6 @@
-import { InboxOutlined, ReloadOutlined } from '@ant-design/icons'
+import { InboxOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Alert, App, Button, Card, DatePicker, Form, Input, InputNumber, Select, Space, Tag } from 'antd'
+import { Alert, App, Button, Card, DatePicker, Form, Input, InputNumber, List, Modal, Select, Space, Tag, Typography } from 'antd'
 import dayjs, { type Dayjs } from 'dayjs'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
@@ -12,7 +12,7 @@ import ProductPhoto from '../components/ProductPhoto'
 import { ErrorState, PageSkeleton } from '../components/ui'
 import { useT } from '../i18n'
 import {
-  canReceive, goodsCents, problem, receiptLines, shortUnits, startEntry,
+  canReceive, extraLine, goodsCents, problem, receiptLines, shortUnits, startEntry,
   type Entry, type FormLine, type ReceivingForm,
 } from './receiveLogic'
 import { fmt } from './textFormat'
@@ -160,6 +160,7 @@ export default function ReceiveGoods() {
   const [date, setDate] = useState<Dayjs>(dayjs())
   const [billNo, setBillNo] = useState('')
   const [billTotal, setBillTotal] = useState('')
+  const [photo, setPhoto] = useState<File | null>(null)
 
   const page = useQuery({
     queryKey: ['receiving', id], enabled: can('grn.create'), refetchOnWindowFocus: false,
@@ -170,13 +171,16 @@ export default function ReceiveGoods() {
     queryFn: async () => (await api.get<Receipt[]>(`/orders/${id}/receipts`)).data,
   })
   const f = page.data
-  const lines = f?.lines ?? []
+  const [extras, setExtras] = useState<FormLine[]>([])
+  const [adding, setAdding] = useState(false)
+  const lines = [...(f?.lines ?? []), ...extras]
   const entry = (l: FormLine) => entries[l.order_line_id] ?? startEntry(l)
   const all = Object.fromEntries(lines.map((l) => [l.order_line_id, entry(l)]))
   const charge = transport ?? f?.transport_charge ?? ''
 
   const asked = receiptLines(lines, all).map((l) => ({
-    order_line_id: l.order_line_id, units: l.units, free_units: l.free_units,
+    order_line_id: l.order_line_id, online_variant_id: l.online_variant_id,
+    units: l.units, free_units: l.free_units,
     unit_price: isValidAmount(l.unit_price) ? l.unit_price : null,
     weight_kg: Number(l.weight_kg) > 0 ? l.weight_kg : null, product_id: l.product_id,
   }))
@@ -197,8 +201,15 @@ export default function ReceiveGoods() {
       invoice_total: billTotal.trim() || null, transport_charge: charge.trim() || '0',
       lines: receiptLines(lines, all),
     })).data,
-    onSuccess: (r) => {
+    onSuccess: async (r) => {
       message.success(fmt(t('rcv.done'), { no: r.receipt_no }))
+      if (photo) {  // the bill's photo goes with the receipt (plan P3)
+        try {
+          await api.put(`/receipts/${r.receipt_id}/photo`, photo, { headers: { 'Content-Type': photo.type } })
+        } catch (e) { message.warning(`${t('rcv.photoFailed')} ${errorMessage(e)}`) }
+        setPhoto(null)
+      }
+      setExtras([])
       for (const key of ['receiving', 'receipts', 'order']) void qc.invalidateQueries({ queryKey: [key, id] })
       void qc.invalidateQueries({ queryKey: ['orders'] })
     },
@@ -251,6 +262,15 @@ export default function ReceiveGoods() {
                 <Input style={{ width: 160 }} prefix="Rs" inputMode="decimal" value={billTotal}
                   onChange={(e) => setBillTotal(e.target.value.trim())} />
               </Form.Item>
+              <Form.Item label={t('rcv.photo')} extra={t('rcv.photoHint')}>
+                <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment"
+                  aria-label={t('rcv.photo')}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] ?? null
+                    if (file && file.size > 3 * 1024 * 1024) { message.warning(t('rcv.photoBig')); e.target.value = ''; return }
+                    setPhoto(file)
+                  }} />
+              </Form.Item>
               <Form.Item label={t('rcv.transport')} extra={t('rcv.transportHint')}>
                 <Input style={{ width: 160 }} prefix="Rs" inputMode="decimal" aria-label={t('rcv.transport')}
                   value={charge} onChange={(e) => setTransport(e.target.value.trim())} />
@@ -261,6 +281,10 @@ export default function ReceiveGoods() {
         {lines.map((l) => <LineCard key={l.order_line_id} line={l} entry={entry(l)} labelsRequired={f.labels_required}
           shown={preview.data?.lines.find((x) => x.order_line_id === l.order_line_id)}
           onChange={(patch) => setEntries((es) => ({ ...es, [l.order_line_id]: { ...entry(l), ...es[l.order_line_id], ...patch } }))} />)}
+        <Button style={{ marginBottom: 12 }} icon={<PlusOutlined />} onClick={() => setAdding(true)}>
+          {t('rcv.addExtra')}</Button>
+        {adding && <AddExtra taken={lines.map((l) => l.online_variant_id ?? '')} onClose={() => setAdding(false)}
+          onPick={(x) => { setExtras((es) => [...es, extraLine(x)]); setAdding(false) }} />}
         {chargeCents > 0 && !!preview.data?.missing_weight.length && (
           <Alert style={{ marginBottom: 12 }} type="error" showIcon message={t('rcv.missingWeight')}
             description={preview.data.missing_weight.join(', ')} />
@@ -288,5 +312,37 @@ export default function ReceiveGoods() {
         </Card>
       </>}
     </>
+  )
+}
+
+interface OnlineItem {
+  online_variant_id: string; name: string; name_si: string | null; variant: string
+  image_url?: string | null; weight_grams: number | null; last_price?: string | null
+}
+
+/** Owner 2026-11-26: a product we already sell that came without being ordered. A product
+ *  that is not on SRIBEES Online is added there by the super admin first. */
+function AddExtra(props: { taken: string[]; onClose: () => void; onPick: (x: OnlineItem) => void }) {
+  const { t } = useT()
+  const [q, setQ] = useState('')
+  const found = useQuery({
+    queryKey: ['online-items', q], enabled: q.trim().length >= 2,
+    queryFn: async () => (await api.get<OnlineItem[]>('/online-items', { params: { q } })).data,
+  })
+  return (
+    <Modal open title={t('rcv.addExtra')} footer={null} onCancel={props.onClose} width={640}>
+      <Typography.Paragraph type="secondary">{t('rcv.addExtraHint')}</Typography.Paragraph>
+      <Input.Search autoFocus allowClear value={q} onChange={(e) => setQ(e.target.value)}
+        placeholder={t('ord.add.search')} />
+      <List style={{ marginTop: 12, maxHeight: 420, overflow: 'auto' }} loading={found.isFetching}
+        dataSource={(found.data ?? []).filter((x) => !props.taken.includes(x.online_variant_id))}
+        locale={{ emptyText: q.trim().length < 2 ? t('ord.add.hint') : t('ord.add.none') }}
+        renderItem={(x) => (
+          <List.Item style={{ cursor: 'pointer' }} onClick={() => props.onPick(x)}>
+            <List.Item.Meta avatar={<ProductPhoto url={x.image_url} size={48} />}
+              title={`${x.name} ${x.variant}`.trim()} description={x.name_si} />
+          </List.Item>
+        )} />
+    </Modal>
   )
 }
