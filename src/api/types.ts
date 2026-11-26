@@ -159,6 +159,7 @@ export interface MatchProduct {
   sku: string | null
   size: string | null
   score: number | null
+  image_url?: string | null
 }
 
 export interface QueueItem {
@@ -180,6 +181,7 @@ export interface OnlineProduct {
   display_size: string | null
   display_size_unit: string | null
   is_active: boolean
+  image_url?: string | null
 }
 
 export type OrderStatus =

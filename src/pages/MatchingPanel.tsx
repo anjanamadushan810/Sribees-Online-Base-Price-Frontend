@@ -208,13 +208,25 @@ function ConfidenceBar({ score }: { score: number | null }) {
   )
 }
 
+/** The Online product's main photo (owner 2026-11-26: easier to recognise than a name). */
+export function ProductPhoto({ url, size = 56 }: { url?: string | null; size?: number }) {
+  const [broken, setBroken] = useState(false)
+  const box = { width: size, height: size, flex: `0 0 ${size}px`, borderRadius: 8,
+    border: '1px solid var(--sb-border)', background: 'var(--sb-surface)', objectFit: 'contain' as const }
+  if (!url || broken) return <div style={{ ...box, background: 'var(--sb-surface-alt)' }} aria-hidden />
+  return <img src={url} alt="" loading="lazy" style={box} onError={() => setBroken(true)} />
+}
+
 function ProductName({ p }: { p: MatchProduct }) {
   return (
-    <div className="match-product">
+    <div className="match-product" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+      <ProductPhoto url={p.image_url} />
+      <div>
       <div className="match-product-name">{p.name}{p.size && <Tag style={{ marginLeft: 8 }}>{p.size}</Tag>}</div>
       {(p.name_si || p.sku) && (
         <Typography.Text type="secondary">{[p.name_si, p.sku].filter(Boolean).join(' · ')}</Typography.Text>
       )}
+      </div>
     </div>
   )
 }
@@ -295,7 +307,7 @@ function ProductSearch(props: { item: QueueItem; onClose: () => void; onPick: (p
         renderItem={(p) => (
           <List.Item actions={[<Button key="pick" type="primary" size="small" onClick={() => props.onPick(p)}>
             {t('match.choose')}</Button>]}>
-            <List.Item.Meta title={p.name} description={[p.name_si, p.sku,
+            <List.Item.Meta avatar={<ProductPhoto url={p.image_url} size={48} />} title={p.name} description={[p.name_si, p.sku,
               [p.display_size, p.display_size_unit].filter(Boolean).join(' ')].filter(Boolean).join(' · ')} />
           </List.Item>
         )} />
