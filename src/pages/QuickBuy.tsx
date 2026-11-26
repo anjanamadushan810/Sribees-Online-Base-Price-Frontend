@@ -4,7 +4,7 @@ import { Alert, App, AutoComplete, Button, Card, DatePicker, Form, Input, InputN
 import dayjs, { type Dayjs } from 'dayjs'
 import { useState } from 'react'
 import { api, errorMessage } from '../api/client'
-import { formatMoney, fromCents, toCents } from '../api/money'
+import { formatMoney, fromCents, isValidAmount, toCents } from '../api/money'
 import type { Branch, Supplier } from '../api/types'
 import PageHeader from '../components/PageHeader'
 import { useT } from '../i18n'
@@ -43,17 +43,21 @@ export default function QuickBuy() {
   const [done, setDone] = useState<Done | null>(null)
   const suppliers = useQuery({ queryKey: ['suppliers'], queryFn: async () => (await api.get<Supplier[]>('/suppliers')).data })
   const branches = useQuery({ queryKey: ['branches'], queryFn: async () => (await api.get<Branch[]>('/branches')).data })
-  const market = (suppliers.data ?? []).filter((s) => s.is_active && !s.users.some((u) => u.is_active))
+  // a supplier on the app (Nishi Palace) may be paid at their counter too (owner 2026-11-26)
+  const shops = (suppliers.data ?? []).filter((s) => s.is_active)
 
   const set = (key: string, patch: Partial<Line>) => setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)))
   const totalCents = lines.reduce((sum, l) => sum + toCents(l.unit_price || '0') * (l.units || 0), 0)
   const billCents = toCents(Form.useWatch('bill_total', form) ?? '')
+  const transport: string = Form.useWatch('transport_charge', form) ?? ''
+  const transportCents = isValidAmount(transport) ? toCents(transport) : 0
 
   const save = useMutation({
-    mutationFn: async (v: { supplier_id: string; branch_id: string; received_date: Dayjs; bill_no?: string; bill_total?: string; notes?: string }) =>
+    mutationFn: async (v: { supplier_id: string; branch_id: string; received_date: Dayjs; bill_no?: string; bill_total?: string; transport_charge?: string; notes?: string }) =>
       (await api.post<Done>('/quick-buys', {
         ...v, received_date: v.received_date.format('YYYY-MM-DD'),
         bill_total: v.bill_total || null, bill_no: v.bill_no || null,
+        transport_charge: v.transport_charge || null,
         lines: lines.map((l) => ({
           online_variant_id: l.item!.online_variant_id, units: l.units, free_units: l.free_units,
           unit_price: l.unit_price, expiry_date: l.expiry ? l.expiry.format('YYYY-MM-DD') : null,
@@ -86,7 +90,7 @@ export default function QuickBuy() {
           <Space wrap size="large" align="start">
             <Form.Item name="supplier_id" label={t('qb.shop')} rules={[{ required: true }]} extra={t('qb.shopHint')}>
               <Select showSearch optionFilterProp="label" style={{ width: 260 }}
-                options={market.map((s) => ({ value: s.supplier_id, label: `${s.name} (${s.code})` }))} />
+                options={shops.map((s) => ({ value: s.supplier_id, label: `${s.name} (${s.code})` }))} />
             </Form.Item>
             <Form.Item name="branch_id" label={t('lb.branch')} rules={[{ required: true }]}>
               <Select style={{ width: 200 }} options={(branches.data ?? []).filter((b) => b.is_active).map((b) => ({ value: b.branch_id, label: b.name }))} />
@@ -96,6 +100,10 @@ export default function QuickBuy() {
             </Form.Item>
             <Form.Item name="bill_no" label={t('qb.billNo')}><Input style={{ width: 160 }} maxLength={60} /></Form.Item>
             <Form.Item name="bill_total" label={t('qb.billTotal')} rules={[{ pattern: /^\d+(\.\d{1,2})?$/, message: t('qb.money') }]}>
+              <Input style={{ width: 160 }} prefix="Rs" inputMode="decimal" />
+            </Form.Item>
+            <Form.Item name="transport_charge" label={t('rcv.transport')} extra={t('rcv.transportHint')}
+              rules={[{ pattern: /^\d+(\.\d{1,2})?$/, message: t('qb.money') }]}>
               <Input style={{ width: 160 }} prefix="Rs" inputMode="decimal" />
             </Form.Item>
           </Space>
@@ -113,9 +121,10 @@ export default function QuickBuy() {
         <Space style={{ marginTop: 12 }} wrap>
           <Button icon={<PlusOutlined />} onClick={() => setLines((ls) => [...ls, newLine()])}>{t('qb.addItem')}</Button>
           <span>{t('qb.itemsTotal')}: <b>Rs {formatMoney(fromCents(totalCents))}</b></span>
+          {transportCents > 0 && <span>{t('rcv.total')}: <b>Rs {formatMoney(fromCents(totalCents + transportCents))}</b></span>}
         </Space>
-        {billCents > 0 && billCents !== totalCents && (
-          <Alert style={{ marginTop: 12 }} type="warning" showIcon message={t('qb.billDiffers')} />
+        {billCents > 0 && billCents !== totalCents + transportCents && (
+          <Alert style={{ marginTop: 12 }} type="warning" showIcon message={t('rcv.billDiffers')} />
         )}
         <div style={{ marginTop: 16 }}>
           <Button type="primary" size="large" htmlType="submit" icon={<ShoppingOutlined />} loading={save.isPending}>{t('qb.save')}</Button>
