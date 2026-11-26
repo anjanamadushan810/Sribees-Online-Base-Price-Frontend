@@ -9,6 +9,7 @@ import {
   QrcodeOutlined,
   ShopOutlined,
   ShoppingCartOutlined,
+  ShoppingOutlined,
   SunOutlined,
   TeamOutlined,
   UserOutlined,
@@ -43,6 +44,7 @@ const GROUPS: NavGroup[] = [
     { key: '/held', label: 'nav.held', icon: <PauseCircleOutlined />, permission: 'suppliers.read' },
   ] },
   { label: 'nav.group.stock', items: [
+    { key: '/quick-buy', label: 'nav.quickBuy', icon: <ShoppingOutlined />, permission: 'grn.create' },
     { key: '/labels', label: 'nav.labels', icon: <QrcodeOutlined />, permission: 'stock.read' },
   ] },
   { label: 'nav.group.setup', items: [
