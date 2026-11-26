@@ -17,6 +17,7 @@ const SupplierDetail = lazy(() => import('./pages/SupplierDetail'))
 const Suppliers = lazy(() => import('./pages/Suppliers'))
 const Users = lazy(() => import('./pages/Users'))
 const Labels = lazy(() => import('./pages/Labels'))
+const QuickBuy = lazy(() => import('./pages/QuickBuy'))
 
 export default function App() {
   const { me, ready } = useAuth()
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="/base-prices" element={<BasePrices />} />
           <Route path="/held" element={<Held />} />
           <Route path="/labels" element={<Labels />} />
+          <Route path="/quick-buy" element={<QuickBuy />} />
           <Route path="/branches" element={<Branches />} />
           <Route path="/users" element={<Users />} />
           <Route path="*" element={<Navigate to="/" replace />} />
