@@ -154,7 +154,7 @@ function ChangesCard({ q }: { q: Q<PriceChanges> }) {
           <Switch size="small" checked={onlyUp} onChange={setOnlyUp} aria-label={t('home.onlyIncreases')} />
           <Typography.Text type="secondary">{t('home.onlyIncreases')}</Typography.Text>
         </Space>
-        <ResponsiveTable rowKey={(r) => `${r.offer_id}:${r.changed_at}`} dataSource={items}
+        <ResponsiveTable rowKey="id" dataSource={items}
           pagination={{ pageSize: 6, hideOnSinglePage: true }} size="small"
           locale={{ emptyText: <Typography.Text type="secondary">{t('home.noChanges')}</Typography.Text> }}
           cardFields={[
@@ -170,6 +170,7 @@ function ChangesCard({ q }: { q: Q<PriceChanges> }) {
               <Space size={8}>
                 <Money value={r.old_price} muted /><span aria-hidden>→</span><Money value={r.new_price} />
                 <PriceChange from={r.old_price} to={r.new_price} />
+                {r.jump && <StatusPill tone="danger">{t('home.jump')}</StatusPill>}
               </Space>) },
             { title: t('home.when'), dataIndex: 'changed_at', render: (v: string) => when(v) },
           ]} />

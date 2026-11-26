@@ -290,7 +290,8 @@ export interface OrdersSummary {
 }
 
 export interface PriceChangeItem {
-  offer_id: string
+  id: string
+  jump: boolean // more than 10% above the last price paid (owner 2026-11-26)
   supplier_id: string
   supplier_name: string
   heading: string
