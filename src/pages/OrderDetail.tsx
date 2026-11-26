@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckOutlined, CloseOutlined, PrinterOutlined } from '@ant-design/icons'
+import { CheckOutlined, CloseOutlined, InboxOutlined, PrinterOutlined } from '@ant-design/icons'
 import { Alert, App, Button, Descriptions, Form, Input, InputNumber, List, Modal, Table, Tag } from 'antd'
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { api, errorMessage } from '../api/client'
 import { when } from '../api/lookups'
 import { formatMoney } from '../api/money'
@@ -15,6 +15,7 @@ import { ResponsiveTable } from '../components/ui/ResponsiveTable'
 import { useT } from '../i18n'
 import { fmt } from './textFormat'
 import { consequence, STATUS_TONE, timeline } from './orderLogic'
+import { canReceive } from './receiveLogic'
 
 export default function OrderDetail() {
   const { id = '' } = useParams()
@@ -56,6 +57,18 @@ export default function OrderDetail() {
         status={<StatusPill tone={STATUS_TONE[o.status]}>{t(`ord.status.${o.status}`)}</StatusPill>}
         subtitle={fmt(t('ord.deliverTo'), { branch: o.branch_name })}
         extra={<Button icon={<PrinterOutlined />} className="no-print" onClick={() => window.print()}>{t('ord.print')}</Button>} />
+
+      {canReceive(o.status) && can('grn.create') && (
+        <Link to={`/orders/${id}/receive`} className="no-print">
+          <Button type="primary" size="large" icon={<InboxOutlined />} style={{ marginBottom: 12 }}>
+            {t('rcv.title')}</Button>
+        </Link>
+      )}
+      {o.status === 'received' && can('stock.read') && (
+        <Link to={`/orders/${id}/receive`} className="no-print">
+          <Button icon={<InboxOutlined />} style={{ marginBottom: 12 }}>{t('rcv.view')}</Button>
+        </Link>
+      )}
 
       <ol className="ord-timeline" aria-label={t('ord.title')}>
         {steps.map((st) => (
