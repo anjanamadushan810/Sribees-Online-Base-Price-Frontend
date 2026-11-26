@@ -6,7 +6,7 @@ const isTyping = (el: EventTarget | null) => {
   return !!n && (['INPUT', 'TEXTAREA', 'SELECT'].includes(n.tagName) || n.isContentEditable)
 }
 
-/** `/` focuses the search box; `g` then `o` / `s` / `m` goes to Orders / Suppliers / Matching. */
+/** `/` focuses the search box; `g` then `o` / `s` goes to Orders / Suppliers. */
 export function useShortcuts(focusSearch: () => void, allowed: { o: boolean; s: boolean; m: boolean }) {
   const navigate = useNavigate()
   useEffect(() => {
@@ -16,7 +16,7 @@ export function useShortcuts(focusSearch: () => void, allowed: { o: boolean; s: 
       if (e.key === '/') { e.preventDefault(); focusSearch(); return }
       if (e.key === 'g') { armed = Date.now(); return }
       if (Date.now() - armed < 1200) {
-        const go = { o: '/orders', s: '/suppliers', m: '/matching' } as const
+        const go = { o: '/orders', s: '/suppliers' } as const
         const k = e.key as keyof typeof go
         if (k in go && allowed[k]) { armed = 0; navigate(go[k]) }
       }

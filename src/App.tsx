@@ -10,7 +10,6 @@ const Home = lazy(() => import('./pages/Home'))
 const BasePrices = lazy(() => import('./pages/BasePrices'))
 const Branches = lazy(() => import('./pages/Branches'))
 const Held = lazy(() => import('./pages/Held'))
-const Matching = lazy(() => import('./pages/Matching'))
 const OrderDetail = lazy(() => import('./pages/OrderDetail'))
 const Orders = lazy(() => import('./pages/Orders'))
 const SupplierDetail = lazy(() => import('./pages/SupplierDetail'))
@@ -29,7 +28,6 @@ export default function App() {
           <Route index element={<Home />} />
           <Route path="/suppliers" element={<Suppliers />} />
           <Route path="/suppliers/:id" element={<SupplierDetail />} />
-          <Route path="/matching" element={<Matching />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/orders/:id" element={<OrderDetail />} />
           <Route path="/base-prices" element={<BasePrices />} />

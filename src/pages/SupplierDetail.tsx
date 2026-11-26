@@ -14,8 +14,7 @@ import { useAuth } from '../auth/AuthContext'
 import PageHeader from '../components/PageHeader'
 import { StatusPill } from '../components/ui'
 import { useT } from '../i18n'
-import MatchingPanel from './MatchingPanel'
-import { fmt } from './matchingLogic'
+import { fmt } from './textFormat'
 import { catalogStats, contactLinks, importStep } from './supplierLogic'
 import SupplierDetails from './SupplierDetails'
 import { PasswordBox, clean } from './SupplierFields'
@@ -64,7 +63,6 @@ export default function SupplierDetail() {
         ...(can('suppliers.write')
           ? [{ key: 'import', label: t('sup.tab.import'), children: <ImportPanel supplierId={id} /> }]
           : []),
-        { key: 'matching', label: t('sup.tab.matching'), children: <MatchingPanel supplierId={id} /> },
         { key: 'phones', label: `${t('sup.tab.phones')}${count(s?.users.length ?? 0)}`, children: s ? <PhonesPanel supplier={s} /> : null },
         { key: 'message', label: t('sup.tab.message'), children: <MessagePanel supplierId={id} /> },
       ]} />
@@ -143,7 +141,6 @@ function ImportPanel({ supplierId }: { supplierId: string }) {
       setPreview(null)
       setText('')
       qc.invalidateQueries({ queryKey: ['catalog', supplierId] })
-      qc.invalidateQueries({ queryKey: ['matching', supplierId] })
     },
     onError: (e) => message.error(errorMessage(e)),
   })

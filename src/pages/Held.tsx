@@ -12,7 +12,7 @@ import { EmptyState, ErrorState, Money, PageSkeleton, StatusPill } from '../comp
 import { ResponsiveTable } from '../components/ui/ResponsiveTable'
 import { useT } from '../i18n'
 import type { TextKey } from '../i18n/en'
-import { fmt } from './matchingLogic'
+import { fmt } from './textFormat'
 import { groupHeld, heldMessage } from './priceLogic'
 
 /** Price lines held back: not shared, not orderable, until the supplier fixes them. */

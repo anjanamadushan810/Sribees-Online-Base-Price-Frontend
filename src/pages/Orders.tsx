@@ -14,7 +14,7 @@ import { SyncOnlineButton } from '../components/SyncOnline'
 import { EmptyState, Money, StatusPill } from '../components/ui'
 import { ResponsiveTable } from '../components/ui/ResponsiveTable'
 import { useT } from '../i18n'
-import { fmt } from './matchingLogic'
+import { fmt } from './textFormat'
 import { filterOrders, STATUS_TONE, totals, type OrderFilter } from './orderLogic'
 
 export default function Orders() {

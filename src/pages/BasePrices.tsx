@@ -6,11 +6,11 @@ import { when } from '../api/lookups'
 import type { BasePriceRow, ProductBasePrice } from '../api/types'
 import PageHeader from '../components/PageHeader'
 import Sparkline from '../components/Sparkline'
-import { EmptyState, Money, PriceChange, StatusPill } from '../components/ui'
+import { EmptyState, Money, StatusPill } from '../components/ui'
 import { ResponsiveTable } from '../components/ui/ResponsiveTable'
 import { useT } from '../i18n'
-import { fmt } from './matchingLogic'
-import { ago, cheapestPrice, currentBase } from './priceLogic'
+import { fmt } from './textFormat'
+import { ago } from './priceLogic'
 
 /** Base price = what we actually agreed to pay (written when a supplier accepts an order). */
 export default function BasePrices() {
@@ -60,28 +60,12 @@ function ProductDrawer({ productId, onClose }: { productId: string; onClose: () 
     queryKey: ['base-price', productId],
     queryFn: async () => (await api.get<ProductBasePrice>(`/base-prices/${productId}`)).data,
   })
-  const base = d.data ? currentBase(d.data.history) : undefined
-  const low = cheapestPrice(d.data?.offers ?? [])
-  const offers = [...(d.data?.offers ?? [])].sort((a, b) => Number(a.price) - Number(b.price))
   const live = (d.data?.history ?? []).filter((h) => !h.voided_at)
     .sort((a, b) => a.recorded_at.localeCompare(b.recorded_at))
   const trend = live.map((h) => Number(h.unit_price))
   return (
     <Drawer open width={680} title={d.data?.name ?? '…'} onClose={onClose}>
-      <Typography.Title level={5}>{t('bp.offers')}</Typography.Title>
-      <Table size="small" rowKey="offer_id" pagination={false} dataSource={offers}
-        locale={{ emptyText: t('bp.noOffers') }}
-        columns={[
-          { title: t('bp.col.supplier'), dataIndex: 'supplier_name' },
-          { title: t('bp.line'), render: (_, o) => `${o.heading} ${o.label}` },
-          { title: t('bp.price'), dataIndex: 'price', align: 'right', render: (v: string) => <Money value={v} /> },
-          { title: t('bp.vsBase'), render: (_, o) => base
-            ? <><PriceChange from={base.unit_price} to={o.price} />{' '}
-              {low !== null && Number(o.price) === low && <StatusPill tone="success">{t('bp.cheapest')}</StatusPill>}</>
-            : (low !== null && Number(o.price) === low ? <StatusPill tone="success">{t('bp.cheapest')}</StatusPill> : '—') },
-          { title: t('bp.perBox'), dataIndex: 'units_per_box', align: 'right', render: (v) => v ?? '?' },
-        ]} />
-      <Typography.Title level={5} style={{ marginTop: 24 }}>{t('bp.paid')}</Typography.Title>
+      <Typography.Title level={5}>{t('bp.paid')}</Typography.Title>
       {trend.length > 1 && (
         <div className="spark-row">
           <Sparkline values={trend} label={`${t('bp.trend')}: ${trend.join(', ')}`} />

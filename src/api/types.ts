@@ -189,7 +189,7 @@ export type OrderStatus =
 
 export interface OrderLine {
   line_id: string
-  offer_id: string
+  offer_id: string | null
   heading: string
   label: string
   boxes: number

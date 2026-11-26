@@ -2,7 +2,6 @@ import {
   BulbOutlined,
   DollarOutlined,
   HomeOutlined,
-  LinkOutlined,
   LogoutOutlined,
   MoonOutlined,
   PauseCircleOutlined,
@@ -39,7 +38,6 @@ const GROUPS: NavGroup[] = [
     { key: '/suppliers', label: 'nav.suppliers', icon: <ShopOutlined />, permission: 'suppliers.read', main: true },
   ] },
   { label: 'nav.group.prices', items: [
-    { key: '/matching', label: 'nav.matching', icon: <LinkOutlined />, permission: 'matches.read', main: true },
     { key: '/base-prices', label: 'nav.basePrices', icon: <DollarOutlined />, permission: 'base_prices.read' },
     { key: '/held', label: 'nav.held', icon: <PauseCircleOutlined />, permission: 'suppliers.read' },
   ] },

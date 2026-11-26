@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { HeldOffer } from '../api/types'
 import { ago, cheapestPrice, currentBase, groupHeld, heldMessage, sparkline } from './priceLogic'
-import { fmt } from './matchingLogic'
+import { fmt } from './textFormat'
 
 const NOW = new Date('2026-11-25T12:00:00Z').getTime()
 const held = (id: string, sup: string, name: string, heading: string): HeldOffer => ({
