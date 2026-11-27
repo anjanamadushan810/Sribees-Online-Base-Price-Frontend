@@ -10,8 +10,9 @@ const line = (id: string, over: Partial<FormLine> = {}): FormLine => ({
   ...over,
 })
 const lines = [line('a'), line('b', { due_units: 60, unit_price: '400.00' })]
+const EXP = '2099-01-01'
 const entries = (a: Partial<Entry> = {}, b: Partial<Entry> = {}) => ({
-  a: { ...startEntry(lines[0]), ...a }, b: { ...startEntry(lines[1]), ...b },
+  a: { ...startEntry(lines[0]), expiry: EXP, ...a }, b: { ...startEntry(lines[1]), expiry: EXP, ...b },
 })
 
 describe('receiving', () => {
@@ -44,6 +45,7 @@ describe('receiving', () => {
     [{ units: 1, selling_price: '260' }, 'sell'],
     [{ units: 1, product_id: null }, 'size'],
     [{ units: 1, labels: '123' }, 'label'],
+    [{ units: 1, expiry: null }, 'expiry'],
   ] as const)('refuses %o', (a, kind) => {
     expect(problem(lines, entries(a), '')?.kind).toBe(kind)
   })

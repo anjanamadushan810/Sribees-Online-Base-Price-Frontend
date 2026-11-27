@@ -50,7 +50,7 @@ export const startEntry = (l: FormLine): Entry => ({
 
 export const labelNumbers = (text: string): string[] => text.split(/[\s,]+/).filter(Boolean)
 
-export type Problem = 'nothing' | 'units' | 'price' | 'weight' | 'size' | 'sell' | 'label' | 'transport'
+export type Problem = 'nothing' | 'units' | 'price' | 'weight' | 'size' | 'sell' | 'label' | 'transport' | 'expiry'
 
 /** The first thing to fix before the receipt can be sent; the server checks everything again. */
 export function problem(lines: FormLine[], entries: Record<string, Entry>, transport: string):
@@ -69,6 +69,8 @@ export function problem(lines: FormLine[], entries: Record<string, Entry>, trans
     if ((sell && !isValidAmount(sell)) || (listed && !isValidAmount(listed))) return { kind: 'sell', line }
     if (sell && listed && toCents(sell) > toCents(listed)) return { kind: 'sell', line }
     if (labelNumbers(e.labels).some((n) => !labelLooksValid(n))) return { kind: 'label', line }
+    // expiry is required on every line (owner 2026-11-27)
+    if (!e.expiry) return { kind: 'expiry', line }
   }
   return any ? null : { kind: 'nothing' }
 }

@@ -1,3 +1,4 @@
+import dayjs from 'dayjs'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { App } from 'antd'
@@ -57,6 +58,23 @@ describe('receive goods page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'All' }))
     expect(await screen.findByText('Rs 240.00', {}, { timeout: 3000 })).toBeInTheDocument()
 
+    // without an expiry date the receipt is refused (owner 2026-11-27)
+    fireEvent.click(screen.getByRole('button', { name: /Save the receipt/ }))
+    expect(await screen.findByText(/Choose the expiry date/)).toBeInTheDocument()
+    const today = dayjs().format('YYYY-MM-DD')
+    const pickers = screen.getAllByPlaceholderText('Select date')
+    const picker = pickers[pickers.length - 1] // the line's expiry, not "Received on"
+    fireEvent.focus(picker)
+    fireEvent.mouseDown(picker)
+    fireEvent.click(picker)
+    const cell = await waitFor(() => {
+      const all = document.querySelectorAll(`td[title="${today}"]`)
+      const c = all[all.length - 1]
+      if (!c) throw new Error(`no ${today} cell: ${document.querySelectorAll('.ant-picker-dropdown').length} panels`)
+      return c
+    })
+    fireEvent.click(cell.querySelector('.ant-picker-cell-inner') ?? cell)
+
     fireEvent.click(screen.getByRole('button', { name: /Save the receipt/ }))
     expect((await screen.findAllByText('Save this receipt?')).length).toBeGreaterThan(0)
     const buttons = screen.getAllByRole('button', { name: /Save the receipt/ })
@@ -65,7 +83,8 @@ describe('receive goods page', () => {
     const sent = vi.mocked(api.post).mock.calls.find(([url]) => url === '/orders/o1/receipts')![1]
     expect(sent).toMatchObject({
       transport_charge: '4000.00',
-      lines: [{ order_line_id: 'l1', units: 100, unit_price: '200.00', selling_price: null }],
+      lines: [{ order_line_id: 'l1', units: 100, unit_price: '200.00', selling_price: null,
+        expiry_date: today }],
     })
   }, 20000)
 })

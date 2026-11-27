@@ -121,7 +121,7 @@ function LineCard({ line, entry, shown, labelsRequired, onChange }: {
                   onChange={(v) => onChange({ product_id: v })}
                   options={line.pack_sizes.map((s) => ({ value: s.online_variant_id, label: s.name }))} />
               </Form.Item>}
-              <Form.Item label={t('lb.expiry')}>
+              <Form.Item label={t('lb.expiry')} required>
                 <DatePicker value={entry.expiry ? dayjs(entry.expiry) : null}
                   onChange={(d: Dayjs | null) => onChange({ expiry: d ? d.format('YYYY-MM-DD') : null })} />
               </Form.Item>

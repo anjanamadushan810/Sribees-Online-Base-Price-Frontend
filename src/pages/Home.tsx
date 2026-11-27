@@ -11,6 +11,7 @@ import PageHeader from '../components/PageHeader'
 import { ErrorState, Money, PageSkeleton, PriceChange, StatCard, StatusPill } from '../components/ui'
 import { ResponsiveTable } from '../components/ui/ResponsiveTable'
 import { useT } from '../i18n'
+import { ExpiringCard, PriceReviewsCard } from './HomeStock'
 import type { TextKey } from '../i18n/en'
 
 const REFRESH_MS = 60_000
@@ -36,6 +37,8 @@ export default function Home() {
         subtitle={`${t('home.hello')}, ${me?.full_name.split(' ')[0] ?? ''}`} />
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
         <TodayCard q={today} />
+        {can('grn.create') && <PriceReviewsCard />}
+        {can('stock.read') && <ExpiringCard />}
         {can('orders.read') && <OrdersCard q={summary} />}
         <Row gutter={[16, 16]}>
           <Col xs={24} xxl={12}><ChangesCard q={changes} /></Col>

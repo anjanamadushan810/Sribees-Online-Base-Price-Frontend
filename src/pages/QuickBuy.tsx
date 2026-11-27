@@ -69,7 +69,7 @@ export default function QuickBuy() {
   })
 
   const submit = (v: Parameters<typeof save.mutate>[0]) => {
-    const bad = lines.find((l) => !l.item || !l.units || !/^\d+(\.\d{1,2})?$/.test(l.unit_price))
+    const bad = lines.find((l) => !l.item || !l.units || !l.expiry || !/^\d+(\.\d{1,2})?$/.test(l.unit_price))
     if (bad) { message.warning(t('qb.fillLines')); return }
     const badLabel = lines.flatMap((l) => l.labels.split(/[\s,]+/).filter(Boolean)).find((n) => !labelLooksValid(n))
     if (badLabel) { message.warning(`${t('lb.badNumber')} (${badLabel})`); return }
