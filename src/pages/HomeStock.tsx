@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { App, Button, Card, Image, Input, Space, Typography } from 'antd'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { api, errorMessage } from '../api/client'
 import { ErrorState, Money, PageSkeleton, StatusPill } from '../components/ui'
 import { ResponsiveTable } from '../components/ui/ResponsiveTable'
@@ -118,6 +119,29 @@ export function ExpiringCard() {
           { title: t('ex.labels'), align: 'right', dataIndex: 'labels_on_shelf' },
         ]} />
       {d.expired > 0 && <Typography.Paragraph type="secondary" style={{ marginTop: 12, marginBottom: 0 }}>{t('ex.writeOff')}</Typography.Paragraph>}
+    </Card>
+  )
+}
+
+/** Goods kept aside without QR labels, waiting to be taken in (owner 2026-11-27). */
+export function HeldCard() {
+  const { t } = useT()
+  const navigate = useNavigate()
+  const q = useQuery({
+    queryKey: ['held-summary'], refetchInterval: REFRESH_MS,
+    queryFn: async () => (await api.get<{ lines: number; units: number; oldest_days: number }>('/stock/held/summary')).data,
+  })
+  if (!q.data || q.data.units <= 0) return null
+  const d = q.data
+  return (
+    <Card title={t('hs.title')} styles={{ body: { padding: 16 } }}
+      extra={<Button onClick={() => navigate('/held-stock')}>{t('hs.open')}</Button>}>
+      <Space wrap size="large">
+        <span>{t('hs.units')}: <b>{d.units}</b></span>
+        <span>{t('hs.lines')}: <b>{d.lines}</b></span>
+        <StatusPill tone={d.oldest_days >= 7 ? 'danger' : d.oldest_days >= 3 ? 'warning' : 'info'}>
+          {t('hs.oldest')}: {t('hs.days').replace('{n}', String(d.oldest_days))}</StatusPill>
+      </Space>
     </Card>
   )
 }

@@ -1,6 +1,6 @@
 import { DeleteOutlined, InboxOutlined, PlusOutlined, ReloadOutlined, SplitCellsOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Alert, App, Button, Card, DatePicker, Divider, Form, Input, InputNumber, List, Modal, Select, Space, Tag, Tooltip, Typography } from 'antd'
+import { Alert, App, Button, Card, DatePicker, Divider, Form, Input, InputNumber, List, Modal, Select, Space, Switch, Tag, Tooltip, Typography } from 'antd'
 import dayjs, { type Dayjs } from 'dayjs'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
@@ -139,11 +139,17 @@ function PartForm({ line, entry, max, shown, labelsRequired, title, onChange, on
                 {money('selling_price', t('rcv.selling'))}
                 {money('listed_price', t('rcv.listed'))}
               </>}
-              <Form.Item label={t('qb.labels')} required={labelsRequired}>
-                <Input.TextArea autoSize={{ minRows: 1, maxRows: 4 }} style={{ width: 200 }}
-                  placeholder={t('qb.labelsHint')} value={entry.labels}
-                  onChange={(e) => onChange({ labels: e.target.value })} />
-              </Form.Item>
+              {!line.by_weight && <Form.Item label={t('rcv.hold')} tooltip={t('rcv.holdHint')}>
+                <Switch checked={entry.hold} aria-label={`${t('rcv.hold')} ${name}`}
+                  onChange={(v) => onChange({ hold: v })} />
+              </Form.Item>}
+              {entry.hold
+                ? <Form.Item label={t('qb.labels')}><Tag color="purple">{t('rcv.holdTag')}</Tag></Form.Item>
+                : <Form.Item label={t('qb.labels')} required={labelsRequired}>
+                    <Input.TextArea autoSize={{ minRows: 1, maxRows: 4 }} style={{ width: 200 }}
+                      placeholder={t('qb.labelsHint')} value={entry.labels}
+                      onChange={(e) => onChange({ labels: e.target.value })} />
+                  </Form.Item>}
             </>}
           </Space>
         </Form>

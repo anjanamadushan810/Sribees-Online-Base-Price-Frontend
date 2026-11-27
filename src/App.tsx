@@ -19,6 +19,7 @@ const Labels = lazy(() => import('./pages/Labels'))
 const QuickBuy = lazy(() => import('./pages/QuickBuy'))
 const Reorder = lazy(() => import('./pages/Reorder'))
 const ReceiveGoods = lazy(() => import('./pages/ReceiveGoods'))
+const HeldStock = lazy(() => import('./pages/HeldStock'))
 
 export default function App() {
   const { me, ready } = useAuth()
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/base-prices" element={<BasePrices />} />
           <Route path="/held" element={<Held />} />
           <Route path="/labels" element={<Labels />} />
+          <Route path="/held-stock" element={<HeldStock />} />
           <Route path="/quick-buy" element={<QuickBuy />} />
           <Route path="/reorder" element={<Reorder />} />
           <Route path="/branches" element={<Branches />} />

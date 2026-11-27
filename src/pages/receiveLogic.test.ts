@@ -99,3 +99,15 @@ describe('one ordered line in batches (owner 2026-11-27)', () => {
     expect(nextPart(lines[0], [part({ units: 100 })]).units).toBeNull()
   })
 })
+
+describe('a part held without QR (owner 2026-11-27)', () => {
+  it('sends hold and no labels, and does not check labels typed before it was switched on', () => {
+    const parts = { a: [
+      { ...startEntry(lines[0]), expiry: EXP, units: 12, labels: '' },
+      { ...startEntry(lines[0]), expiry: EXP, units: 36, hold: true, labels: '123 bad' },
+    ] }
+    expect(problem(lines, parts, '')).toBeNull()
+    expect(receiptLines(lines, parts)).toMatchObject([
+      { units: 12, hold: false }, { units: 36, hold: true, labels: [] }])
+  })
+})

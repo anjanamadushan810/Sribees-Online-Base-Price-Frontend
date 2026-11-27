@@ -42,6 +42,8 @@ export interface Entry {
   units: number | null; free_units: number; unit_price: string; weight_kg: string
   expiry: string | null; labels: string; selling_price: string; listed_price: string
   product_id: string | null; mrp: string
+  /** kept aside without QR labels (owner 2026-11-27): in stock now, labelled later */
+  hold: boolean
 }
 
 /** The parts typed per order line (most lines have one). */
@@ -50,7 +52,7 @@ export type Parts = Record<string, Entry[]>
 export const startEntry = (l: FormLine): Entry => ({
   units: null, free_units: 0, unit_price: l.unit_price, weight_kg: '', expiry: null, labels: '',
   selling_price: l.shop?.selling_price ?? '', listed_price: l.shop?.listed_price ?? '',
-  product_id: l.online_variant_id, mrp: l.mrp ?? '',
+  product_id: l.online_variant_id, mrp: l.mrp ?? '', hold: false,
 })
 
 /** A new part of a line: what is still due after the other parts, the same pack size and
@@ -97,7 +99,7 @@ export function problem(lines: FormLine[], parts: Parts, transport: string):
       const sell = e.selling_price.trim(); const listed = e.listed_price.trim()
       if ((sell && !isValidAmount(sell)) || (listed && !isValidAmount(listed))) return { kind: 'sell', ...at }
       if (sell && listed && toCents(sell) > toCents(listed)) return { kind: 'sell', ...at }
-      if (labelNumbers(e.labels).some((n) => !labelLooksValid(n))) return { kind: 'label', ...at }
+      if (!e.hold && labelNumbers(e.labels).some((n) => !labelLooksValid(n))) return { kind: 'label', ...at }
       // expiry is required on every part (owner 2026-11-27)
       if (!e.expiry) return { kind: 'expiry', ...at }
     }
@@ -133,8 +135,9 @@ export function receiptLines(lines: FormLine[], parts: Parts) {
       units: e.units as number, free_units: e.free_units,
       unit_price: e.unit_price.replace(/,/g, ''),
       weight_kg: line.by_weight ? e.weight_kg : null,
-      expiry_date: e.expiry, product_id: line.extra ? null : e.product_id, labels: labelNumbers(e.labels),
-      listed_price: listed, selling_price: selling, mrp: mrp || null,
+      expiry_date: e.expiry, product_id: line.extra ? null : e.product_id,
+      labels: e.hold ? [] : labelNumbers(e.labels),
+      listed_price: listed, selling_price: selling, mrp: mrp || null, hold: e.hold,
     }
   })
 }

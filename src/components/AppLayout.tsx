@@ -1,4 +1,5 @@
 import {
+  InboxOutlined,
   SyncOutlined,
   BulbOutlined,
   DollarOutlined,
@@ -46,6 +47,7 @@ const GROUPS: NavGroup[] = [
   { label: 'nav.group.stock', items: [
     { key: '/quick-buy', label: 'nav.quickBuy', icon: <ShoppingOutlined />, permission: 'grn.create' },
     { key: '/labels', label: 'nav.labels', icon: <QrcodeOutlined />, permission: 'stock.read' },
+    { key: '/held-stock', label: 'nav.heldStock', icon: <InboxOutlined />, permission: 'stock.read' },
   ] },
   { label: 'nav.group.setup', items: [
     { key: '/branches', label: 'nav.branches', icon: <TeamOutlined />, permission: 'branches.read' },
