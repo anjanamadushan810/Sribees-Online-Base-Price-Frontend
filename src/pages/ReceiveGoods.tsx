@@ -1,6 +1,6 @@
-import { InboxOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
+import { DeleteOutlined, InboxOutlined, PlusOutlined, ReloadOutlined, SplitCellsOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Alert, App, Button, Card, DatePicker, Form, Input, InputNumber, List, Modal, Select, Space, Tag, Typography } from 'antd'
+import { Alert, App, Button, Card, DatePicker, Divider, Form, Input, InputNumber, List, Modal, Select, Space, Tag, Tooltip, Typography } from 'antd'
 import dayjs, { type Dayjs } from 'dayjs'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
@@ -12,8 +12,8 @@ import ProductPhoto from '../components/ProductPhoto'
 import { ErrorState, PageSkeleton } from '../components/ui'
 import { useT } from '../i18n'
 import {
-  canReceive, extraLine, goodsCents, problem, receiptLines, shortUnits, startEntry,
-  type Entry, type FormLine, type ReceivingForm,
+  cameParts, canReceive, extraLine, goodsCents, nextPart, partUnits, problem, receiptLines, shortUnits,
+  startEntry, type Entry, type FormLine, type Parts, type ReceivingForm,
 } from './receiveLogic'
 import { fmt } from './textFormat'
 
@@ -27,6 +27,8 @@ interface Receipt {
   receipt_id: string; receipt_no: string; received_date: string; total: string
   transport_charge: string; invoice_no: string | null
 }
+
+const MAX_PARTS = 10 // parts of one line: more looks like a mistake
 
 interface Send { receipt_line_id: string; product_name: string; status: 'pending' | 'sent' | 'refused'; reason: string | null }
 
@@ -71,45 +73,50 @@ function OnlineState({ receipt }: { receipt: Receipt }) {
   )
 }
 
-function LineCard({ line, entry, shown, labelsRequired, onChange }: {
-  line: FormLine; entry: Entry; shown?: Preview['lines'][number]; labelsRequired: boolean
-  onChange: (patch: Partial<Entry>) => void
+type Shown = Preview['lines'][number]
+
+/** One part of a line (owner 2026-11-27): its own units, price, MRP, expiry and QR labels;
+ *  it becomes its own batch. */
+function PartForm({ line, entry, max, shown, labelsRequired, title, onChange, onRemove }: {
+  line: FormLine; entry: Entry; max: number; shown?: Shown; labelsRequired: boolean
+  title?: string; onChange: (patch: Partial<Entry>) => void; onRemove?: () => void
 }) {
   const { t, lang } = useT()
-  const name = lang === 'si' && line.name_si ? line.name_si : line.name
+  const name = `${lang === 'si' && line.name_si ? line.name_si : line.name}${title ? ` ${title}` : ''}`
   const came = !!entry.units
-  const money = (key: 'unit_price' | 'listed_price' | 'selling_price', label: string) => (
+  const money = (key: 'unit_price' | 'listed_price' | 'selling_price' | 'mrp', label: string) => (
     <Form.Item label={label}>
       <Input style={{ width: 130 }} prefix="Rs" inputMode="decimal" aria-label={`${label} ${name}`}
         value={entry[key]} onChange={(e) => onChange({ [key]: e.target.value.trim() })} />
     </Form.Item>
   )
   return (
-    <Card size="small" style={{ marginBottom: 12 }}>
-      <Space align="start" wrap size="middle">
-        <ProductPhoto url={line.image_url} />
-        <div style={{ minWidth: 220 }}>
-          <b>{name}</b>
-          <div>{fmt(t('rcv.ordered'), { n: line.due_units, price: formatMoney(line.unit_price) })}</div>
-          {line.shop && <div>{fmt(t('rcv.shopStock'), { n: line.shop.stock_quantity ?? 0 })}</div>}
-          {!line.by_weight && (line.unit_weight_grams
-            ? <Tag>{fmt(t('rcv.weight'), { g: line.unit_weight_grams })}</Tag>
-            : <Tag color="orange">{t('rcv.noWeight')}</Tag>)}
-        </div>
+    <div>
+      {title && <Divider dashed style={{ margin: '8px 0' }} />}
+      {title && (
+        <Space style={{ marginBottom: 4 }}>
+          <Tag color="blue">{title}</Tag>
+          {onRemove && <Button size="small" type="text" danger icon={<DeleteOutlined />}
+            aria-label={`${t('rcv.removeBatch')} ${name}`} onClick={onRemove}>{t('rcv.removeBatch')}</Button>}
+        </Space>
+      )}
+      <Space wrap align="start" size="middle">
         <Form layout="vertical" component="div">
           <Space wrap align="start">
             <Form.Item label={t('rcv.units')}>
               <Space.Compact>
-                <InputNumber min={0} max={line.due_units} precision={0} style={{ width: 100 }}
+                <InputNumber min={0} max={max} precision={0} style={{ width: 100 }}
                   aria-label={`${t('rcv.units')} ${name}`} value={entry.units}
                   onChange={(v) => onChange({ units: v === null ? null : Number(v) })} />
-                <Button onClick={() => onChange({ units: line.due_units })}>{t('rcv.all')}</Button>
+                <Button onClick={() => onChange({ units: max })}>{t('rcv.all')}</Button>
               </Space.Compact>
             </Form.Item>
             {came && <>
               {money('unit_price', t('rcv.billPrice'))}
+              {money('mrp', t('rcv.mrp'))}
               <Form.Item label={t('qb.free')}>
                 <InputNumber min={0} precision={0} style={{ width: 80 }} value={entry.free_units}
+                  aria-label={`${t('qb.free')} ${name}`}
                   onChange={(v) => onChange({ free_units: Number(v) || 0 })} />
               </Form.Item>
               {line.by_weight && <Form.Item label={t('rcv.kg')}>
@@ -122,7 +129,7 @@ function LineCard({ line, entry, shown, labelsRequired, onChange }: {
                   options={line.pack_sizes.map((s) => ({ value: s.online_variant_id, label: s.name }))} />
               </Form.Item>}
               <Form.Item label={t('lb.expiry')} required>
-                <DatePicker value={entry.expiry ? dayjs(entry.expiry) : null}
+                <DatePicker value={entry.expiry ? dayjs(entry.expiry) : null} aria-label={`${t('lb.expiry')} ${name}`}
                   onChange={(d: Dayjs | null) => onChange({ expiry: d ? d.format('YYYY-MM-DD') : null })} />
               </Form.Item>
               {line.shop && line.shop.stock_mode === 'unit' && <>
@@ -145,6 +152,46 @@ function LineCard({ line, entry, shown, labelsRequired, onChange }: {
           </div>
         )}
       </Space>
+    </div>
+  )
+}
+
+function LineCard({ line, parts, shown, labelsRequired, onChange }: {
+  line: FormLine; parts: Entry[]; shown: (part: number) => Shown | undefined; labelsRequired: boolean
+  onChange: (parts: Entry[]) => void
+}) {
+  const { t, lang } = useT()
+  const name = lang === 'si' && line.name_si ? line.name_si : line.name
+  const taken = partUnits(parts)
+  const split = parts.length > 1
+  const set = (i: number, patch: Partial<Entry>) => onChange(parts.map((e, j) => (j === i ? { ...e, ...patch } : e)))
+  return (
+    <Card size="small" style={{ marginBottom: 12 }}>
+      <Space align="start" wrap size="middle">
+        <ProductPhoto url={line.image_url} />
+        <div style={{ minWidth: 220 }}>
+          <b>{name}</b>
+          <div>{fmt(t('rcv.ordered'), { n: line.due_units, price: formatMoney(line.unit_price) })}</div>
+          {split && !line.extra && <div>{fmt(t('rcv.partsTotal'), { n: taken, due: line.due_units })}</div>}
+          {line.shop && <div>{fmt(t('rcv.shopStock'), { n: line.shop.stock_quantity ?? 0 })}</div>}
+          {!line.by_weight && (line.unit_weight_grams
+            ? <Tag>{fmt(t('rcv.weight'), { g: line.unit_weight_grams })}</Tag>
+            : <Tag color="orange">{t('rcv.noWeight')}</Tag>)}
+        </div>
+      </Space>
+      {parts.map((e, i) => (
+        <PartForm key={i} line={line} entry={e} labelsRequired={labelsRequired} shown={shown(i)}
+          max={Math.max(line.due_units - (taken - (e.units ?? 0)), 0)}
+          title={split ? fmt(t('rcv.batchN'), { n: i + 1 }) : undefined}
+          onChange={(patch) => set(i, patch)}
+          onRemove={split ? () => onChange(parts.filter((_, j) => j !== i)) : undefined} />
+      ))}
+      {!!parts[0]?.units && parts.length < MAX_PARTS && (line.extra || taken < line.due_units) && (
+        <Tooltip title={t('rcv.addBatchHint')}>
+          <Button style={{ marginTop: 8 }} size="small" icon={<SplitCellsOutlined />}
+            onClick={() => onChange([...parts, nextPart(line, parts)])}>{t('rcv.addBatch')}</Button>
+        </Tooltip>
+      )}
     </Card>
   )
 }
@@ -155,7 +202,7 @@ export default function ReceiveGoods() {
   const { can } = useAuth()
   const { message, modal } = App.useApp()
   const qc = useQueryClient()
-  const [entries, setEntries] = useState<Record<string, Entry>>({})
+  const [typed, setTyped] = useState<Parts>({})
   const [transport, setTransport] = useState<string | null>(null)
   const [date, setDate] = useState<Dayjs>(dayjs())
   const [billNo, setBillNo] = useState('')
@@ -174,8 +221,14 @@ export default function ReceiveGoods() {
   const [extras, setExtras] = useState<FormLine[]>([])
   const [adding, setAdding] = useState(false)
   const lines = [...(f?.lines ?? []), ...extras]
-  const entry = (l: FormLine) => entries[l.order_line_id] ?? startEntry(l)
-  const all = Object.fromEntries(lines.map((l) => [l.order_line_id, entry(l)]))
+  const partsOf = (l: FormLine): Entry[] => typed[l.order_line_id] ?? [startEntry(l)]
+  const all: Parts = Object.fromEntries(lines.map((l) => [l.order_line_id, partsOf(l)]))
+  // the preview answers row by row in the order the parts were sent
+  const came = cameParts(lines, all)
+  const shownFor = (l: FormLine, part: number) => {
+    const at = came.findIndex((x) => x.line.order_line_id === l.order_line_id && x.part === part)
+    return at < 0 ? undefined : preview.data?.lines[at]
+  }
   const charge = transport ?? f?.transport_charge ?? ''
 
   const asked = receiptLines(lines, all).map((l) => ({
@@ -210,6 +263,7 @@ export default function ReceiveGoods() {
         setPhoto(null)
       }
       setExtras([])
+      setTyped({})
       for (const key of ['receiving', 'receipts', 'order']) void qc.invalidateQueries({ queryKey: [key, id] })
       void qc.invalidateQueries({ queryKey: ['orders'] })
     },
@@ -224,7 +278,8 @@ export default function ReceiveGoods() {
     const bad = problem(lines, all, charge)
       ?? (billTotal.trim() && !isValidAmount(billTotal) ? { kind: 'billTotal' as const, line: undefined } : null)
     if (bad) {
-      message.warning(`${t(`rcv.bad.${bad.kind}`)}${bad.line ? ` (${bad.line.name})` : ''}`)
+      const where = bad.line ? ` (${bad.line.name}${'part' in bad && bad.part ? ` · ${fmt(t('rcv.batchN'), { n: bad.part })}` : ''})` : ''
+      message.warning(`${t(`rcv.bad.${bad.kind}`)}${where}`)
       return
     }
     modal.confirm({
@@ -278,9 +333,9 @@ export default function ReceiveGoods() {
             </Space>
           </Form>
         </Card>
-        {lines.map((l) => <LineCard key={l.order_line_id} line={l} entry={entry(l)} labelsRequired={f.labels_required}
-          shown={preview.data?.lines.find((x) => x.order_line_id === l.order_line_id)}
-          onChange={(patch) => setEntries((es) => ({ ...es, [l.order_line_id]: { ...entry(l), ...es[l.order_line_id], ...patch } }))} />)}
+        {lines.map((l) => <LineCard key={l.order_line_id} line={l} parts={partsOf(l)} labelsRequired={f.labels_required}
+          shown={(part) => shownFor(l, part)}
+          onChange={(parts) => setTyped((ps) => ({ ...ps, [l.order_line_id]: parts }))} />)}
         <Button style={{ marginBottom: 12 }} icon={<PlusOutlined />} onClick={() => setAdding(true)}>
           {t('rcv.addExtra')}</Button>
         {adding && <AddExtra taken={lines.map((l) => l.online_variant_id ?? '')} onClose={() => setAdding(false)}

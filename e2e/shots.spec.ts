@@ -11,7 +11,7 @@ const ME = {
   two_factor: true,
   permissions: ['suppliers.read', 'suppliers.write', 'suppliers.bank', 'matches.read',
     'matches.write', 'orders.read', 'orders.create', 'orders.approve', 'base_prices.read',
-    'branches.read', 'branches.write', 'users.read', 'users.write'],
+    'branches.read', 'branches.write', 'users.read', 'users.write', 'grn.create'],
 }
 const SUP = (i: number, name: string, credit: number) => ({
   supplier_id: `s${i}`, code: `SUP-000${i}`, name, notes: null, is_active: true,
@@ -143,6 +143,20 @@ const FIXTURES: Record<string, unknown> = {
       { online_product_id: 'p2', product_name: 'Anchor milk powder 400g', base_price: '352.00', base_supplier: 'Lanka Distributors', best_price: '340.00', best_supplier: 'Ceylon Foods (Pvt) Ltd', saving: '12.00', saving_pct: 3.4, last_paid_at: '2026-11-18T10:00:00Z' },
     ],
   },
+  // owner 2026-11-27: one ordered line received in two batches (shot 'receive-split')
+  '/orders/o2/receiving': {
+    order_id: 'o2', order_no: 'SPO-000011', status: 'accepted', supplier_name: 'Lanka Distributors',
+    branch_name: 'Matugama', transport_charge: '600.00', transport_cap_pct: 10, labels_required: false,
+    online_stock_in: true, online_error: null,
+    lines: [
+      { order_line_id: 'l1', name: 'Anchor milk powder 400g', name_si: 'ඇන්කර් කිරි පිටි 400g', image_url: null,
+        online_variant_id: 'v1', pack_sizes: [], due_units: 48, unit_price: '348.50', mrp: '420.00',
+        by_weight: false, unit_weight_grams: 420, shop: null },
+      { order_line_id: 'l2', name: 'Baby Cheramy soap 75g', name_si: null, image_url: null,
+        online_variant_id: 'v2', pack_sizes: [], due_units: 72, unit_price: '125.00', mrp: '165.00',
+        by_weight: false, unit_weight_grams: 80, shop: null },
+    ],
+  },
   '/branches': [{ branch_id: 'b1', code: 'MTG', name: 'Matugama', online_branch_id: 'x', is_active: true }],
   '/users': [ME],
   '/reorder': [{ branch_id: 'b1', branch_name: 'Matugama', ran_at: '2026-11-27T01:30:00Z', result: {
@@ -241,6 +255,18 @@ for (const mode of MODES) {
         const fs = await import('node:fs')
         fs.mkdirSync('shots', { recursive: true })
         fs.writeFileSync(`shots/a11y-${mode}-${size}.json`, JSON.stringify(report, null, 2))
+      })
+
+      test('receive split', async ({ page }) => {
+        await fakeApi(page, true)
+        await page.goto('/orders/o2/receive')
+        const units = page.getByRole('spinbutton', { name: 'Units Anchor milk powder 400g' })
+        await units.fill('30')
+        await page.getByRole('button', { name: /Another batch/ }).click()
+        await expect(page.getByText('Batch 2').first()).toBeVisible()
+        await page.getByRole('textbox', { name: 'MRP (printed) Anchor milk powder 400g Batch 2' }).fill('440.00')
+        await page.waitForTimeout(400)
+        await page.screenshot({ path: `shots/${mode}-${size}-receive-split.png`, fullPage: true })
       })
 
       // the per-product drawer with supplier offers went with the matching screen (2026-11-26)
