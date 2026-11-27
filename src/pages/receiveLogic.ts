@@ -61,6 +61,15 @@ export function nextPart(l: FormLine, parts: Entry[]): Entry {
   return { ...startEntry(l), units: left || null, product_id: first?.product_id ?? l.online_variant_id }
 }
 
+const MAX_UNITS = 1_000_000
+
+/** Units that came above what was ordered (owner 2026-11-27: taken, after a confirm). */
+export function overUnits(lines: FormLine[], parts: Parts): { line: FormLine; over: number }[] {
+  return lines.filter((l) => !l.extra)
+    .map((line) => ({ line, over: partUnits(parts[line.order_line_id]) - line.due_units }))
+    .filter((x) => x.over > 0)
+}
+
 export const partUnits = (parts: Entry[] | undefined): number =>
   (parts ?? []).reduce((n, e) => n + (e.units ?? 0), 0)
 
@@ -75,13 +84,12 @@ export function problem(lines: FormLine[], parts: Parts, transport: string):
   let any = false
   for (const line of lines) {
     const list = parts[line.order_line_id] ?? []
-    // the parts together stay within what is due
-    if (partUnits(list) > line.due_units) return { kind: 'units', line }
+    // owner 2026-11-27: more than ordered may come; the page asks staff to confirm it
     for (const [i, e] of list.entries()) {
       if (!e.units) continue // nothing of this part came
       any = true
       const at = { line, part: list.length > 1 ? i + 1 : undefined }
-      if (!Number.isInteger(e.units) || e.units < 0 || e.units > line.due_units) return { kind: 'units', ...at }
+      if (!Number.isInteger(e.units) || e.units < 0 || e.units > MAX_UNITS) return { kind: 'units', ...at }
       if (!isValidAmount(e.unit_price)) return { kind: 'price', ...at }
       if (!e.product_id) return { kind: 'size', ...at }
       if (line.by_weight && !(Number(e.weight_kg) > 0)) return { kind: 'weight', ...at }

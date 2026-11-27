@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { extraLine, goodsCents, nextPart, problem, receiptLines, shortUnits, startEntry, type Entry, type FormLine } from './receiveLogic'
+import { extraLine, goodsCents, nextPart, overUnits, problem, receiptLines, shortUnits, startEntry, type Entry, type FormLine } from './receiveLogic'
 
 const line = (id: string, over: Partial<FormLine> = {}): FormLine => ({
   order_line_id: id, name: id, name_si: null, image_url: null, online_variant_id: `v-${id}`,
@@ -40,7 +40,7 @@ describe('receiving', () => {
   })
 
   it.each([
-    [{ units: 101 }, 'units'],
+    [{ units: 1.5 }, 'units'],
     [{ units: 1, unit_price: 'x' }, 'price'],
     [{ units: 1, selling_price: '260' }, 'sell'],
     [{ units: 1, product_id: null }, 'size'],
@@ -84,8 +84,11 @@ describe('one ordered line in batches (owner 2026-11-27)', () => {
     expect(shortUnits(lines, parts)).toBe(100 - 48 + 60)
   })
 
-  it('refuses parts above what is due and names the part', () => {
-    expect(problem(lines, { a: [part({ units: 60 }), part({ units: 41 })] }, '')?.kind).toBe('units')
+  it('takes more than ordered (owner 2026-11-27) and names it; names the part to fix', () => {
+    const over = { a: [part({ units: 60 }), part({ units: 41 })] }
+    expect(problem(lines, over, '')).toBeNull()
+    expect(overUnits(lines, over)).toEqual([{ line: lines[0], over: 1 }])
+    expect(shortUnits(lines, over)).toBe(60)
     expect(problem(lines, { a: [part({ units: 60 }), part({ units: 4, expiry: null })] }, ''))
       .toMatchObject({ kind: 'expiry', part: 2 })
   })

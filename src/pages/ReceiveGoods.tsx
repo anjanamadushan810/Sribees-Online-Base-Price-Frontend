@@ -12,7 +12,7 @@ import ProductPhoto from '../components/ProductPhoto'
 import { ErrorState, PageSkeleton } from '../components/ui'
 import { useT } from '../i18n'
 import {
-  cameParts, canReceive, extraLine, goodsCents, nextPart, partUnits, problem, receiptLines, shortUnits,
+  cameParts, canReceive, extraLine, goodsCents, nextPart, overUnits, partUnits, problem, receiptLines, shortUnits,
   startEntry, type Entry, type FormLine, type Parts, type ReceivingForm,
 } from './receiveLogic'
 import { fmt } from './textFormat'
@@ -105,11 +105,14 @@ function PartForm({ line, entry, max, shown, labelsRequired, title, onChange, on
           <Space wrap align="start">
             <Form.Item label={t('rcv.units')}>
               <Space.Compact>
-                <InputNumber min={0} max={max} precision={0} style={{ width: 100 }}
+                <InputNumber min={0} max={1_000_000} precision={0} style={{ width: 100 }}
                   aria-label={`${t('rcv.units')} ${name}`} value={entry.units}
                   onChange={(v) => onChange({ units: v === null ? null : Number(v) })} />
                 <Button onClick={() => onChange({ units: max })}>{t('rcv.all')}</Button>
               </Space.Compact>
+              {!line.extra && (entry.units ?? 0) > max && (
+                <div><Tag color="orange">{fmt(t('rcv.overTag'), { n: (entry.units ?? 0) - max })}</Tag></div>
+              )}
             </Form.Item>
             {came && <>
               {money('unit_price', t('rcv.billPrice'))}
@@ -186,7 +189,7 @@ function LineCard({ line, parts, shown, labelsRequired, onChange }: {
           onChange={(patch) => set(i, patch)}
           onRemove={split ? () => onChange(parts.filter((_, j) => j !== i)) : undefined} />
       ))}
-      {!!parts[0]?.units && parts.length < MAX_PARTS && (line.extra || taken < line.due_units) && (
+      {!!parts[0]?.units && parts.length < MAX_PARTS && (
         <Tooltip title={t('rcv.addBatchHint')}>
           <Button style={{ marginTop: 8 }} size="small" icon={<SplitCellsOutlined />}
             onClick={() => onChange([...parts, nextPart(line, parts)])}>{t('rcv.addBatch')}</Button>
@@ -282,9 +285,15 @@ export default function ReceiveGoods() {
       message.warning(`${t(`rcv.bad.${bad.kind}`)}${where}`)
       return
     }
+    const over = overUnits(lines, all)
     modal.confirm({
       title: short ? fmt(t('rcv.shortTitle'), { n: short }) : t('rcv.confirm'),
-      content: short ? t('rcv.shortText') : undefined,
+      content: (short || over.length) ? <>
+        {short ? <p>{t('rcv.shortText')}</p> : null}
+        {over.length > 0 && <Alert type="warning" showIcon message={t('rcv.overTitle')}
+          description={<ul style={{ margin: 0, paddingLeft: 18 }}>{over.map((x) => <li key={x.line.order_line_id}>
+            {fmt(t('rcv.overLine'), { name: x.line.name, ordered: x.line.due_units, got: x.line.due_units + x.over })}</li>)}</ul>} />}
+      </> : undefined,
       okText: t('rcv.save'), cancelText: t('rcv.back'), onOk: () => save.mutate(),
     })
   }
