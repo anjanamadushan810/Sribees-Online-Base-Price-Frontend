@@ -1,6 +1,6 @@
 import { SyncOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Alert, App, Button, Card, List, Select, Space, Table, Tag } from 'antd'
+import { Alert, App, Button, Card, List, Select, Space, Tag } from 'antd'
 import { Link } from 'react-router-dom'
 import { api, errorMessage } from '../api/client'
 import { when } from '../api/lookups'
@@ -8,6 +8,7 @@ import type { Supplier } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import PageHeader from '../components/PageHeader'
 import { EmptyState, ErrorState, PageSkeleton } from '../components/ui'
+import { ResponsiveTable } from '../components/ui/ResponsiveTable'
 import { useT } from '../i18n'
 import type { TextKey } from '../i18n/en'
 import { fmt } from './textFormat'
@@ -57,6 +58,10 @@ export default function Reorder() {
     },
     onError: (e) => message.error(errorMessage(e)),
   })
+  const stock = (r: LeftOut) => `${r.available} / ${r.minimum} / ${r.maximum ?? '—'}`
+  const why = (r: LeftOut) => t(`ro.why.${r.reason}` as TextKey)
+  const pick = (r: LeftOut) => r.reason === 'no_supplier' && r.online_variant_id && can('orders.create')
+    ? <ChooseSupplier row={r} suppliers={suppliers.data ?? []} /> : null
   if (runs.isError) return <ErrorState message={errorMessage(runs.error)} onRetry={() => void runs.refetch()} />
   if (!runs.data) return <PageSkeleton rows={6} />
   return (
@@ -75,18 +80,24 @@ export default function Reorder() {
               <Tag color="green">{fmt(t('ro.added'), { n: b.result.added })}</Tag>
             </Space>
             {b.result.drafts.length > 0 && <List size="small" header={<b>{t('ro.drafts')}</b>} dataSource={b.result.drafts}
-              renderItem={(d) => <List.Item><Link to={`/orders/${d.order_id}`}>{d.order_no}</Link> · {d.supplier_name}
-                · {fmt(t('ro.lines'), { n: d.lines, added: d.added })}</List.Item>} />}
+              renderItem={(d) => <List.Item>
+                <span><Link to={`/orders/${d.order_id}`}>{d.order_no}</Link>{` · ${d.supplier_name} · ${fmt(t('ro.lines'), { n: d.lines, added: d.added })}`}</span>
+              </List.Item>} />}
             {b.result.left_out.length > 0 && <>
               <Alert style={{ margin: '12px 0' }} type="warning" showIcon message={t('ro.leftOut')} />
-              <Table rowKey={(r) => `${r.online_product_id}-${r.reason}`} size="small" pagination={{ pageSize: 20, hideOnSinglePage: true }}
-                dataSource={b.result.left_out} scroll={{ x: 700 }}
+              <ResponsiveTable rowKey={(r) => `${r.online_product_id}-${r.reason}`} size="small"
+                pagination={{ pageSize: 20, hideOnSinglePage: true }} dataSource={b.result.left_out}
+                cardFields={[
+                  { label: t('ro.col.item'), render: (r) => <b>{r.name}</b> },
+                  { label: t('ro.col.stock'), render: stock },
+                  { label: t('ro.col.why'), render: (r) => why(r) },
+                  { label: '', render: (r) => pick(r) },
+                ]}
                 columns={[
                   { title: t('ro.col.item'), dataIndex: 'name' },
-                  { title: t('ro.col.stock'), render: (_, r) => `${r.available} / ${r.minimum} / ${r.maximum ?? '—'}` },
-                  { title: t('ro.col.why'), dataIndex: 'reason', render: (v: string) => t(`ro.why.${v}` as TextKey) },
-                  { title: '', render: (_, r) => r.reason === 'no_supplier' && r.online_variant_id && can('orders.create')
-                    ? <ChooseSupplier row={r} suppliers={suppliers.data ?? []} /> : null },
+                  { title: t('ro.col.stock'), render: (_, r) => stock(r) },
+                  { title: t('ro.col.why'), render: (_, r) => why(r) },
+                  { title: '', render: (_, r) => pick(r) },
                 ]} />
             </>}
           </>}
