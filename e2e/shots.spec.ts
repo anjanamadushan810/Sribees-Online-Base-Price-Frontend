@@ -145,6 +145,15 @@ const FIXTURES: Record<string, unknown> = {
   },
   '/branches': [{ branch_id: 'b1', code: 'MTG', name: 'Matugama', online_branch_id: 'x', is_active: true }],
   '/users': [ME],
+  '/reorder': [{ branch_id: 'b1', branch_name: 'Matugama', ran_at: '2026-11-27T01:30:00Z', result: {
+    checked: 412, below_minimum: 9, added: 5,
+    drafts: [{ order_id: 'o3', order_no: 'SPO-000041', supplier_id: 's1', supplier_name: 'Nishi Super Palace', added: 4, lines: 4 },
+      { order_id: 'o4', order_no: 'SPO-000042', supplier_id: 's2', supplier_name: 'Lanka Distributors', added: 1, lines: 2 }],
+    left_out: [
+      { online_product_id: 'p7', name: 'Samba rice 5kg', reason: 'no_maximum', available: 3, minimum: 10, maximum: null },
+      { online_product_id: 'p8', online_variant_id: 'p8', name: 'Happy Cow cheese 8 portions', reason: 'no_supplier', available: 0, minimum: 5, maximum: 20, need: 20 },
+      { online_product_id: 'p9', name: 'Dhal loose', reason: 'by_weight', available: 1, minimum: 4, maximum: 30 },
+    ] } }],
 }
 
 async function fakeApi(page: Page, signedIn: boolean) {
@@ -162,7 +171,7 @@ async function fakeApi(page: Page, signedIn: boolean) {
 
 const SCREENS = [
   ['home', '/'], ['suppliers', '/suppliers'], ['orders', '/orders'], ['base-prices', '/base-prices'],
-  ['held', '/held'], ['matching', '/matching'], ['order-submitted', '/orders/o1'], ['order-accepted', '/orders/o2'], ['supplier-detail', '/suppliers/s1'], ['branches', '/branches'], ['users', '/users'],
+  ['held', '/held'], ['matching', '/matching'], ['order-submitted', '/orders/o1'], ['order-accepted', '/orders/o2'], ['supplier-detail', '/suppliers/s1'], ['branches', '/branches'], ['users', '/users'], ['reorder', '/reorder'],
 ] as const
 const SIZES = [['desktop', 1440, 900], ['phone', 390, 844]] as const
 const MODES = ['light', 'dark'] as const
