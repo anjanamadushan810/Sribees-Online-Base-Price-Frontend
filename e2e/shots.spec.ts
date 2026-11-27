@@ -234,13 +234,13 @@ for (const mode of MODES) {
         fs.writeFileSync(`shots/a11y-${mode}-${size}.json`, JSON.stringify(report, null, 2))
       })
 
-      test('base price drawer', async ({ page }) => {
+      // the per-product drawer with supplier offers went with the matching screen (2026-11-26)
+      test('base prices', async ({ page }) => {
         await fakeApi(page, true)
         await page.goto('/base-prices')
-        await page.getByText('Baby Cheramy soap 75g').first().click()
-        await expect(page.getByText('What suppliers offer today')).toBeVisible()
+        await expect(page.getByText('Baby Cheramy soap 75g').first()).toBeVisible()
         await page.waitForTimeout(500)
-        await page.screenshot({ path: `shots/${mode}-${size}-base-price-drawer.png` })
+        await page.screenshot({ path: `shots/${mode}-${size}-base-prices.png` })
       })
     })
   }
