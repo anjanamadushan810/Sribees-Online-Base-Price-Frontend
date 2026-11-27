@@ -1,4 +1,5 @@
 import {
+  SyncOutlined,
   BulbOutlined,
   DollarOutlined,
   HomeOutlined,
@@ -35,6 +36,7 @@ const GROUPS: NavGroup[] = [
   ] },
   { label: 'nav.group.buy', items: [
     { key: '/orders', label: 'nav.orders', icon: <ShoppingCartOutlined />, permission: 'orders.read', main: true },
+    { key: '/reorder', label: 'nav.reorder', icon: <SyncOutlined />, permission: 'orders.read' },
     { key: '/suppliers', label: 'nav.suppliers', icon: <ShopOutlined />, permission: 'suppliers.read', main: true },
   ] },
   { label: 'nav.group.prices', items: [
